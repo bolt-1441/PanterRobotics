@@ -93,4 +93,13 @@ public class Arm {
         griper.setPosition(.5);
     }
 
+    public int getArmMotorCurrentPosition(){
+        return armMotor.getCurrentPosition();
+    }
+    public int getArmMotorTargetPosition(){
+        return armMotor.getTargetPosition();
+    }
+    public void resetArmMotor(){
+        armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
 }

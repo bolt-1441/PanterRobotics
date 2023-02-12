@@ -166,6 +166,17 @@ public class AutonomousRightV2 extends LinearOpMode {
 
         //Reads the cone and sets the claw down
 
+        /*
+        this is an idea i have to line up the bot on the tape in front of the cone stack
+                -Teddy
+        while(<not_lined_up>){
+            TrajectorySequence traj99 = drive.trajectorySequenceBuilder(traj98.end())
+                    .lineToLinearHeading(new Pose2d(<curent_position> -/+ <corection_val_to_move_to_line>))
+                    .build();
+            drive.followTrajectorySequence(traj99)
+        }
+         */
+
         if(pos == 1){
             drive.followTrajectorySequence(trajL);
         }
@@ -183,7 +194,7 @@ public class AutonomousRightV2 extends LinearOpMode {
             telemetry.update();
         }
     }
-    //HOW TO MAKE THE ROBOT MOE TO A SPECIFIC SPOT//
+    //HOW TO MAKE THE ROBOT MOVE TO A SPECIFIC SPOT//
 //    drive.followTrajectory(
 //            drive.trajectoryBuilder(traj.end(), true)
 //            .splineTo(new Vector2d(0, 0), Math.toRadians(180))

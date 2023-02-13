@@ -12,9 +12,10 @@ public class LineTracker {
 
     public double getVoltage() {
         return lineTracker.getVoltage();
-    }
+    }//voltage is the reflectivity detected by the sensor
+    //0v-3.3v or 0v-6v
 
-    public boolean isOnLine() {
+    public boolean isOnLine() {//boolean value for if the sensor is looking at something more reflective than the mats
         double voltage = getVoltage();
         return voltage < 1;
     }

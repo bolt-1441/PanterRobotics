@@ -35,6 +35,7 @@ public class AutonomousLeftV2 extends LinearOpMode {
     private DcMotor turret = null;
     NormalizedColorSensor colorSensor;
     View relativeLayout;
+
     @Override
     public void runOpMode() throws InterruptedException {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
@@ -45,6 +46,10 @@ public class AutonomousLeftV2 extends LinearOpMode {
         colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
         wrist = hardwareMap.get(Servo.class,"wrist");
         turret = hardwareMap.get(DcMotor.class, "turret");
+        LineTracker lineTrackerLeftForward = new LineTracker(hardwareMap,"lineTrackerLeftForward");
+        LineTracker lineTrackerRightForward = new LineTracker(hardwareMap,"lineTrackerRightForward");
+        LineTracker lineTrackerLeftBack = new LineTracker(hardwareMap,"lineTrackerRightBack");
+        LineTracker lineTrackerRightBack = new LineTracker(hardwareMap,"lineTrackerLeftBack");
 
         turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         turret.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -55,7 +60,8 @@ public class AutonomousLeftV2 extends LinearOpMode {
         runSample(); // actually execute the sample
         NormalizedRGBA colors = colorSensor.getNormalizedColors();
         wrist.setPosition(1);
-        sleep(5);
+        sleep(500);
+        int val = 0;
         /////////////////////////THIS IS WHERE IT STARTS/////EVERYTHING BEFORE HERE IS INITIALIZATION/////////////
         waitForStart();
         sleep(700);
@@ -75,15 +81,16 @@ public class AutonomousLeftV2 extends LinearOpMode {
         TrajectoryVelocityConstraint velConstraint2 = new MinVelocityConstraint(Arrays.asList(
                 new TranslationalVelocityConstraint(35)
         ));
+        //Heads to cone and then reads the cone
         TrajectorySequence trajSeq = drive.trajectorySequenceBuilder(startPose)
                 .setVelConstraint(velConstraint1)
-                .splineToConstantHeading(new Vector2d(10,5),Math.toRadians(0))
-                .splineTo(new Vector2d(25,5), Math.toRadians(0))
+                .splineToConstantHeading(new Vector2d(10,6),Math.toRadians(0))
+                .splineTo(new Vector2d(25,6), Math.toRadians(0))
                 .build();
+        //Goes to the end of the field and lifts up the claw
         TrajectorySequence trajSeq2 = drive.trajectorySequenceBuilder(trajSeq.end())
-                .setVelConstraint(velConstraint2)
-                .splineTo(new Vector2d(57,5),Math.toRadians(0))
-                .addSpatialMarker(new Vector2d(57, 5), () -> {
+                .splineTo(new Vector2d(57,6),Math.toRadians(0))
+                .addSpatialMarker(new Vector2d(57, 9), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
                     turret.setPower(1);
@@ -91,43 +98,17 @@ public class AutonomousLeftV2 extends LinearOpMode {
                     samePostitionarm();
                     // Run your action in here!
                 })
-                .waitSeconds(.3)
                 .build();
+        //Sets up for the cone placement
         TrajectorySequence traj2 = drive.trajectorySequenceBuilder(trajSeq2.end())
-                .lineToLinearHeading(new Pose2d(50, 16, Math.toRadians(180)))
+                .lineToLinearHeading(new Pose2d(49, 17, Math.toRadians(180)))
                 .build();
+        //Heads to the cone stack
         TrajectorySequence traj3 = drive.trajectorySequenceBuilder(traj2.end())
                 .lineToLinearHeading(new Pose2d(58,21, Math.toRadians(180)))
-                .lineToLinearHeading(new Pose2d(56,30, Math.toRadians(90)))
-                .setVelConstraint(velConstraint1)
-                .lineToLinearHeading(new Pose2d(55,35, Math.toRadians(90)))
-                .lineToLinearHeading(new Pose2d(55,34, Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(53,28, Math.toRadians(90)))
                 .build();
-        TrajectorySequence traj4 = drive.trajectorySequenceBuilder(traj3.end())
-                .lineToLinearHeading(new Pose2d(54,-5, Math.toRadians(90)))
-                .addSpatialMarker(new Vector2d(57, 10), () -> {
-                    // This marker runs at the point that gets
-                    // closest to the (20, 20) coordinate
-                    turret.setPower(1);
-                    turret.setTargetPosition(2100);
-                    samePostitionarm();
-                    // Run your action in here!
-                })
-                .lineToLinearHeading(new Pose2d(51, -4, Math.toRadians(180)))
-                .waitSeconds(1)
-                .build();
-        TrajectorySequence traj5 = drive.trajectorySequenceBuilder(traj4.end())
-                .lineToLinearHeading(new Pose2d(55, -4, Math.toRadians(180)))
-                .build();
-        TrajectorySequence trajR = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(53,30,Math.toRadians(90)))
-                .build();
-        TrajectorySequence trajL = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(53,-19,Math.toRadians(90)))
-                .build();
-        TrajectorySequence trajC = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(53,5,Math.toRadians(90)))
-                .build();
+
         drive.followTrajectorySequence(trajSeq);
         pos = runSample();
         sleep(100);
@@ -137,20 +118,65 @@ public class AutonomousLeftV2 extends LinearOpMode {
         samePostitionarm();
         sleep(400);
         wrist.setPosition(.5);
-        sleep(100);
-        drive.followTrajectorySequence(traj3);
-        turret.setPower(.7);
-        turret.setTargetPosition(520);
-        samePostitionarm();
-        sleep(400);
-        wrist.setPosition(1);
-        sleep(100);
         turret.setPower(1);
+        turret.setTargetPosition(1200);
+        samePostitionarm();
+        drive.followTrajectorySequence(traj3);
+        if(lineTrackerLeftBack.isOnLine()&&lineTrackerLeftForward.isOnLine())
+            val-=2;
+        if (lineTrackerRightBack.isOnLine()&&lineTrackerRightForward.isOnLine())
+            val+=2;
+        else
+            val=0;
+        telemetry.addData("val:",val);
+        telemetry.update();
+        TrajectorySequence compensate = drive.trajectorySequenceBuilder(traj3.end())
+                .setVelConstraint(velConstraint1)
+                .lineToLinearHeading(new Pose2d(53+val,37, Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(53+val,36, Math.toRadians(90)))
+                .build();
+        //heads to place cone
+        TrajectorySequence traj4 = drive.trajectorySequenceBuilder(compensate.end())
+                .lineToLinearHeading(new Pose2d(55,-3, Math.toRadians(90)))
+                .addSpatialMarker(new Vector2d(56, -1), () -> {
+                    // This marker runs at the point that gets
+                    // closest to the (20, 20) coordinate
+                    turret.setPower(1);
+                    turret.setTargetPosition(2300);
+                    samePostitionarm();
+                    // Run your action in here!
+                })
+                .lineToLinearHeading(new Pose2d(55, -4, Math.toRadians(180)))
+                .lineToLinearHeading(new Pose2d(49, -3, Math.toRadians(180)))
+                .waitSeconds(1)
+                .build();
+        TrajectorySequence traj5 = drive.trajectorySequenceBuilder(traj4.end())
+                .lineToLinearHeading(new Pose2d(55, 4, Math.toRadians(180)))
+                .build();
+        //TODO MORE THAN ONE CONE PLACEMENT
+        TrajectorySequence trajL = drive.trajectorySequenceBuilder(traj5.end())
+                .lineToLinearHeading(new Pose2d(53,-15,Math.toRadians(90)))
+                .build();
+        TrajectorySequence trajC = drive.trajectorySequenceBuilder(traj5.end())
+                .lineToLinearHeading(new Pose2d(53,7,Math.toRadians(90)))
+                .build();
+        TrajectorySequence trajR = drive.trajectorySequenceBuilder(traj5.end())
+                .lineToLinearHeading(new Pose2d(53,35,Math.toRadians(90)))
+                .build();
+        sleep(600);
+        drive.followTrajectorySequence(compensate);
+        turret.setPower(.7);
+        turret.setTargetPosition(700);
+        samePostitionarm();
+        sleep(500);
+        wrist.setPosition(1);
+        turret.setPower(1);
+        sleep(500);
         turret.setTargetPosition(1400);
         samePostitionarm();
         sleep(400);
         drive.followTrajectorySequence(traj4);
-        turret.setTargetPosition(1900);
+        turret.setTargetPosition(1950);
         samePostitionarm();
         wrist.setPosition(.5);
         sleep(200);
@@ -158,9 +184,11 @@ public class AutonomousLeftV2 extends LinearOpMode {
         samePostitionarm();
         sleep(1000);
         drive.followTrajectorySequence(traj5);
+        turret.setTargetPosition(200);
+        samePostitionarm();
         //Reads the cone and sets the claw down
 
-        if(pos == 3){
+        if(pos == 1){
             drive.followTrajectorySequence(trajL);
         }
         else if(pos == 2){
@@ -169,6 +197,7 @@ public class AutonomousLeftV2 extends LinearOpMode {
         else{
             drive.followTrajectorySequence(trajR);
         }
+        sleep(5000);
     }
     private void samePostitionarm(){
         if(turret.getTargetPosition() != turret.getCurrentPosition()){

@@ -42,7 +42,9 @@ public class testingClass extends LinearOpMode {
 
         drive.setPoseEstimate(startPose);
         colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
+        Servo claw = hardwareMap.get(Servo.class,"wrist");
         Arm arm = new Arm(hardwareMap,"turret","wrist");
+
 
         int relativeLayoutId = hardwareMap.appContext.getResources().getIdentifier("RelativeLayout", "id", hardwareMap.appContext.getPackageName());
         relativeLayout = ((Activity) hardwareMap.appContext).findViewById(relativeLayoutId);
@@ -54,7 +56,6 @@ public class testingClass extends LinearOpMode {
         sleep(10);// TODO: 2/9/2023 run arm in thread bc it fucks up the base bc time moves and the arm cant stop  
         /////////////////////////THIS IS WHERE IT STARTS/////EVERYTHING BEFORE HERE IS INITIALIZATION/////////////
         waitForStart();
-        sleep(800);
         arm.moveToTick(700);
         sleep(10);
         int pos = 0;
@@ -74,7 +75,7 @@ public class testingClass extends LinearOpMode {
         //Goes to the end of the field and lifts up the claw
         TrajectorySequence trajSeq2 = drive.trajectorySequenceBuilder(trajSeq.end())
                 .setVelConstraint(velConstraint2)
-                .splineTo(new Vector2d(64,-6),Math.toRadians(0))
+                .splineTo(new Vector2d(58,-6),Math.toRadians(0))
                 .addSpatialMarker(new Vector2d(64, -8), () -> {
                     // This marker runs at the point that gets
                     // closest to the coordinate
@@ -84,15 +85,15 @@ public class testingClass extends LinearOpMode {
                 .build();
         //Sets up for the cone placement
         TrajectorySequence traj2 = drive.trajectorySequenceBuilder(trajSeq2.end())
-                .lineToLinearHeading(new Pose2d(52, -17, Math.toRadians(-180)))
+                .lineToLinearHeading(new Pose2d(50, -17, Math.toRadians(-180)))
                 .build();
         //Heads to the cone stack
         TrajectorySequence traj3 = drive.trajectorySequenceBuilder(traj2.end())
-                .lineToLinearHeading(new Pose2d(57,-21, Math.toRadians(-180)))
-                .lineToLinearHeading(new Pose2d(56,-30, Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(58,-21, Math.toRadians(-180)))
+                .lineToLinearHeading(new Pose2d(54,-30, Math.toRadians(-90)))
                 .setVelConstraint(velConstraint1)
-                .lineToLinearHeading(new Pose2d(55,-36, Math.toRadians(-90)))
-                .lineToLinearHeading(new Pose2d(55,-35, Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(52,-36, Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(52,-35, Math.toRadians(-90)))
                 .build();
         //heads to place cone
         TrajectorySequence traj4 = drive.trajectorySequenceBuilder(traj3.end())
@@ -125,19 +126,20 @@ public class testingClass extends LinearOpMode {
         drive.followTrajectorySequence(trajSeq2);
         sleep(10);
         drive.followTrajectorySequence(traj2);
-        arm.moveToTick(1100);
+        arm.moveToTick(1000);
         sleep(10);
         arm.closeGripper();
         sleep(10);
-
+        arm.moveToTick(1200);
+        sleep(10);
         drive.followTrajectorySequence(traj3);
-        requestOpModeStop();
-        arm.moveToTick(520);
+        arm.moveToTick(540);
         sleep(400);
         arm.openGripper();
         sleep(7000);
         arm.moveToTick(1400);
         sleep(400);
+        requestOpModeStop();
         drive.followTrajectorySequence(traj4);
         arm.moveToTick(1900);
         arm.closeGripper();

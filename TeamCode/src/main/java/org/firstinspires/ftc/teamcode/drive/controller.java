@@ -100,8 +100,7 @@ public class controller extends LinearOpMode {
 
     public PantherArm pantherArm;
     public Arm arm;
-    public LineTracker lineTrackerLeft;
-    public LineTracker lineTrackerRight;
+
     public LimitSwitch limitSwitch;
     public LimitSwitch coneDectc;
 
@@ -220,6 +219,8 @@ public class controller extends LinearOpMode {
 
             if(limitSwitch.isPressed())
                 turret.setTargetPosition(turret.getCurrentPosition() + 100);
+            if(gamepad2.right_stick_button)
+                pantherArm.armReset();
 
             if(coneDectc.isPressed()&&gamepad2.left_stick_button){
                 arm.closeGripper();
@@ -405,8 +406,7 @@ public class controller extends LinearOpMode {
 
         limitSwitch = new LimitSwitch(hardwareMap,"limitSwitch",false);
         coneDectc = new LimitSwitch(hardwareMap,"limitSwitchA",false);
-        lineTrackerLeft = new LineTracker(hardwareMap,"lineTrackerLeft");
-        lineTrackerRight = new LineTracker(hardwareMap,"lineTrackerRight");
+
         arm = new Arm(hardwareMap,"turret","wrist");
         pantherArm = new PantherArm(arm,limitSwitch,coneDectc);
 

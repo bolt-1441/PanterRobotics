@@ -22,12 +22,14 @@ public class Arm {
     }
 
     public void moveToTick(int tick){
-        armMotor.setTargetPosition(tick);
-        armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        armMotor.setPower(1);
-        while(armMotor.getTargetPosition() != armMotor.getCurrentPosition()) {
-            //Wait for the arm to reach the target height
-        }
+        Thread thread = new Thread(()->{
+            armMotor.setTargetPosition(tick);
+            armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            armMotor.setPower(1);
+            while(armMotor.getTargetPosition() != armMotor.getCurrentPosition()) {
+                //Wait for the arm to reach the target height
+            }});
+        thread.start();
     }
 
     public void moveToHeight(double height) {

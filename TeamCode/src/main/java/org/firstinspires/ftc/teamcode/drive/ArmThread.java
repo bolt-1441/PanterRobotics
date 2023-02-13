@@ -20,10 +20,17 @@ public class ArmThread extends Thread {
             while (arm.getCurrentPosition()!=arm.getTargetPosition()&&
                     !(limitSwitch.isPressed())) {
                 if(limitSwitch.isPressed()) {
+                    while (limitSwitch.isPressed()) {
+                        arm.setPower(.3);
+                        arm.setTargetPosition(arm.getCurrentPosition() + 100);
+                    }
+                    arm.setTargetPosition(arm.getCurrentPosition() + 200);
+                    arm.setPower(1);
                     arm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     break;
                 }
             }
         }
+        arm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 }

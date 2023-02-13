@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class LimitSwitch {
     private DigitalChannel switchPin;
-    public boolean defaultState;
+    public boolean defaultState;//the state of the switch when not pressed, vex switches default on/true
 
     public LimitSwitch(HardwareMap hardwareMap, String switchName,boolean defaultState) {
         switchPin = hardwareMap.get(DigitalChannel.class, switchName);

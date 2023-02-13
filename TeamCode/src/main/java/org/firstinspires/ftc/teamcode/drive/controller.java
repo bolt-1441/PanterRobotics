@@ -37,7 +37,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -45,7 +44,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
 
 /**
@@ -56,7 +54,7 @@ import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
  *
  * This particular OpMode illustrates driving a 4-motor Omni-Directional (or Holonomic) robot.
  * This code will work with either a Mecanum-Drive or an X-Drive train.
- * Both of these drives are illustrated at https://gm0.org/en/latest/docs/robot-design/drivetrains/holonomic.html
+ * Both of these drives are illustrated at <a href="https://gm0.org/en/latest/docs/robot-design/drivetrains/holonomic.html">...</a>
  * Note that a Mecanum drive must display an X roller-pattern when viewed from above.
  *
  * Also note that it is critical to set the correct rotation direction for each motor.  See details below.
@@ -81,14 +79,16 @@ import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
 public class controller extends LinearOpMode {
 
     // Declare OpMode members for each of the 4 motors.
-    private ElapsedTime runtime = new ElapsedTime();
+    private final ElapsedTime runtime = new ElapsedTime();
     private DcMotor leftFrontDrive,leftBackDrive,rightFrontDrive,rightBackDrive,turret;
 
     private Servo wrist = null;
     BNO055IMU imu;
     Orientation             lastAngles = new Orientation();
-    double                  globalAngle, power = .30, correction;
-    View relativeLayout;
+
+    BNO055IMU.Parameters parameters;
+    double                  globalAngle;
+    double correction;
     static final double     COUNTS_PER_MOTOR_REV    = 28 ;    // eg: TETRIX Motor Encoder
     static final double     DRIVE_GEAR_REDUCTION    = 1.0 ;     // No External Gearing.
     static final double     WHEEL_DIAMETER_INCHES   = .8 ;     // For figuring circumference
@@ -97,56 +97,19 @@ public class controller extends LinearOpMode {
 
     private DcMotor led = null;
     private boolean isFlashing = false;
-    private long startTime;
-    double vol;
+
+    public PantherArm pantherArm;
+    public Arm arm;
+    public LineTracker lineTrackerLeft;
+    public LineTracker lineTrackerRight;
+    public LimitSwitch limitSwitch;
+    public LimitSwitch coneDectc;
+
 
     @Override
     public void runOpMode() {
-
-        // Initialize the hardware variables. Note that the strings used here must correspond
-        // to the names assigned during the robot configuration step on the DS or RC devices.
-        leftFrontDrive  = hardwareMap.get(DcMotor.class, "FrontLeft");
-        leftBackDrive  = hardwareMap.get(DcMotor.class, "BackLeft");
-        rightFrontDrive = hardwareMap.get(DcMotor.class, "FrontRight");
-        rightBackDrive = hardwareMap.get(DcMotor.class, "BackRight");
-        turret = hardwareMap.get(DcMotor.class, "turret");
-        wrist = hardwareMap.get(Servo.class,"wrist");
-
-        led = hardwareMap.get(DcMotor.class,"LED");
-
-        LimitSwitch limitSwitch = new LimitSwitch(hardwareMap,"limitSwitch",false);
-        LimitSwitch coneDectc = new LimitSwitch(hardwareMap,"limitSwitchA",false);
-        LineTracker lineTrackerLeft = new LineTracker(hardwareMap,"lineTrackerLeft");
-        LineTracker lineTrackerRight = new LineTracker(hardwareMap,"lineTrackerRight");
-        Arm arm = new Arm(hardwareMap,"turret","wrist");
-
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-
-        parameters.mode                = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled      = false;
-
-        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
-        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
-        // and named "imu".
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-
-        imu.initialize(parameters);
-
-        telemetry.addData("Mode", "calibrating...");
-        telemetry.update();
-
-        // make sure the imu gyro is calibrated before continuing.
-        while (!isStopRequested() && !imu.isGyroCalibrated())
-        {
-            sleep(50);
-            idle();
-        }
-
-        telemetry.addData("Mode", "waiting for start");
-        telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
-        telemetry.update();
+        initBot();
+        setMotor();
 
         // ########################################################################################
         // !!!            IMPORTANT Drive Information. Test your motor directions.            !!!!!
@@ -158,28 +121,10 @@ public class controller extends LinearOpMode {
         // when you first test your robot, push the left joystick forward and observe the direction the wheels turn.
         // Reverse the direction (flip FORWARD <-> REVERSE ) of any wheel that runs backward
         // Keep testing until ALL the wheels move the robot forward when you push the left joystick forward.
-        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
-        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
-
-
-        turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-
-        turret.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
         // Wait for the game to start (driver presses PLAY)
         telemetry.addData("Status", "Initialized");
         telemetry.update();
-        turret.setTargetPosition(0);
         double dec = 1;
-
-
-        leftBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        leftFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         Acceleration acceleration = imu.getLinearAcceleration();
         waitForStart();
         runtime.reset();
@@ -187,7 +132,6 @@ public class controller extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
 
         while (opModeIsActive()) {
-            acceleration = imu.getLinearAcceleration();
             if(gamepad1.right_stick_x <= -.2 || gamepad1.right_stick_x >= .2)
                 correction = checkDirection();
             else {
@@ -244,30 +188,20 @@ public class controller extends LinearOpMode {
             if(gamepad1.x){
                 rotate(135,1);
             }
-            if(gamepad2.left_bumper){
-                wrist.setPosition(.5);
-            }
-
-            if(gamepad2.dpad_down || gamepad2.dpad_up || gamepad2.dpad_left || gamepad2.dpad_right){
-                turret.setTargetPosition(10);
-            }
-            if(gamepad2.right_bumper){
-                wrist.setPosition(1);
-            }
-            if(gamepad2.a){
-                turret.setTargetPosition(700);
-            }
+            if(gamepad2.left_bumper)
+                arm.closeGripper();
+            if(gamepad2.dpad_down)
+                pantherArm.armReset();
+            if(gamepad2.right_bumper)
+                arm.openGripper();
+            if(gamepad2.a)
+                arm.moveToTick(700);
             if(gamepad2.b)
-            {
-                turret.setTargetPosition(1500);
-            }
-            if(gamepad2.y){
-                turret.setTargetPosition(2250);
-            }
+                arm.moveToTick(1500);
+            if(gamepad2.y)
+                arm.moveToTick(2250);
             if(gamepad2.x)
-            {
-                turret.setTargetPosition(3000);
-            }
+                arm.moveToTick(3000);
             if((turret.getTargetPosition() != turret.getCurrentPosition())){
                 turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 if(gamepad2.right_trigger >.1){
@@ -277,48 +211,26 @@ public class controller extends LinearOpMode {
                     turret.setTargetPosition(turret.getCurrentPosition() - (int)(gamepad2.left_trigger * 150));
                 }
             }
-            if(gamepad2.right_trigger >.1){
+
+            if(gamepad2.right_trigger >.1)
                 turret.setTargetPosition(turret.getCurrentPosition() + (int)(gamepad2.right_trigger * 150));
-            }
-            if(gamepad2.left_trigger >.1){
+
+            if(gamepad2.left_trigger >.1)
                 turret.setTargetPosition(turret.getCurrentPosition() - (int)(gamepad2.left_trigger * 150));
-            }
+
             if(limitSwitch.isPressed())
-                turret.setTargetPosition(turret.getCurrentPosition() + Math.max(100,turret.getTargetPosition()));
-            if(gamepad2.right_stick_button) {
-                Thread armThread = new ArmThread(hardwareMap, "turret", limitSwitch);
-                armThread.run();
-            }
+                turret.setTargetPosition(turret.getCurrentPosition() + 100);
+
             if(coneDectc.isPressed()&&gamepad2.left_stick_button){
                 arm.closeGripper();
-                turret.setTargetPosition(10);
-                while ( !(limitSwitch.isPressed())) {
-                    turret.setTargetPosition(turret.getCurrentPosition()-2000);
-                    while (turret.getCurrentPosition()!=turret.getTargetPosition()&&
-                            !(limitSwitch.isPressed())) {
-                        if(limitSwitch.isPressed()) {
-                            turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                            break;
-                        }
-                    }
-                }
+                pantherArm.armReset();
+                arm.moveToTick(10);
                 arm.openGripper();
                 sleep(50);
-                turret.setTargetPosition(200);
+                arm.moveToTick(250);
             }
-
-            if(gamepad2.right_stick_x>.5) {
-                arm.highG();
-                arm.closeGripper();
-                sleep(1000);
-                arm.openGripper();
-            }
-
-
             setBrightnessFlash(.9);
 
-            telemetry.addData("leftLine",lineTrackerLeft.getVoltage());
-            telemetry.addData("rightLine",lineTrackerRight.getVoltage());
 //
             // This is test code:
             //
@@ -376,26 +288,6 @@ public class controller extends LinearOpMode {
         lastAngles = angles;
 
         return globalAngle;
-    }
-    private double getAccelX(){
-        Acceleration acceleration = imu.getLinearAcceleration();
-        double speed = -acceleration.yAccel;
-        return speed;
-    }
-    private double getAccelY(){
-        Acceleration acceleration = imu.getLinearAcceleration();
-        double speed = acceleration.zAccel;
-        return speed;
-    }
-    private double getAccelZ(){
-        Acceleration acceleration = imu.getLinearAcceleration();
-        double speed = acceleration.xAccel;
-        return speed;
-    }
-    private double getAunglerSpeed(){
-        AngularVelocity angularVelocity = imu.getAngularVelocity();
-        double speed = -angularVelocity.zRotationRate;
-        return speed;
     }
 
     /**
@@ -500,17 +392,73 @@ public class controller extends LinearOpMode {
             }
         }
     }
-    private final double ACCELERATION_THRESHOLD = 0.01;
-    private double prevAcceleration;
+    public void initBot(){
+        leftFrontDrive  = hardwareMap.get(DcMotor.class, "FrontLeft");
+        leftBackDrive  = hardwareMap.get(DcMotor.class, "BackLeft");
+        rightFrontDrive = hardwareMap.get(DcMotor.class, "FrontRight");
+        rightBackDrive = hardwareMap.get(DcMotor.class, "BackRight");
+        turret = hardwareMap.get(DcMotor.class, "turret");
+        wrist = hardwareMap.get(Servo.class,"wrist");
 
-    private void detectStop() {
-        Acceleration acceleration = imu.getLinearAcceleration();
-        double acceleration2 = (Math.abs(acceleration.xAccel + acceleration.yAccel + acceleration.zAccel)/3);
-        if (Math.abs(acceleration2 - prevAcceleration) < ACCELERATION_THRESHOLD) {
-            telemetry.addData("Robot time",acceleration2);
+        led = hardwareMap.get(DcMotor.class,"LED");
+
+
+        limitSwitch = new LimitSwitch(hardwareMap,"limitSwitch",false);
+        coneDectc = new LimitSwitch(hardwareMap,"limitSwitchA",false);
+        lineTrackerLeft = new LineTracker(hardwareMap,"lineTrackerLeft");
+        lineTrackerRight = new LineTracker(hardwareMap,"lineTrackerRight");
+        arm = new Arm(hardwareMap,"turret","wrist");
+        pantherArm = new PantherArm(arm,limitSwitch,coneDectc);
+
+        parameters = new BNO055IMU.Parameters();
+
+        parameters.mode                = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingEnabled      = false;
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
+        // and named "imu".
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+
+        imu.initialize(parameters);
+
+        telemetry.addData("Mode", "calibrating...");
+        telemetry.update();
+
+        // make sure the imu gyro is calibrated before continuing.
+        while (!isStopRequested() && !imu.isGyroCalibrated())
+        {
+            sleep(50);
+            idle();
         }
-        prevAcceleration = acceleration2;
-        telemetry.addData("Robot acceleration:",acceleration2);
+
+        telemetry.addData("Mode", "waiting for start");
+        telemetry.addData("imu calib status", imu.getCalibrationStatus().toString());
+        telemetry.update();
+
+    }
+    public void setMotor(){
+        leftFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        leftBackDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightFrontDrive.setDirection(DcMotor.Direction.FORWARD);
+        rightBackDrive.setDirection(DcMotor.Direction.FORWARD);
+
+
+        turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+
+        turret.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        // Wait for the game to start (driver presses PLAY)
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
+        turret.setTargetPosition(0);
+        leftBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightBackDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightFrontDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 }
 

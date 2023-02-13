@@ -189,8 +189,6 @@ public class controller extends LinearOpMode {
             }
             if(gamepad2.left_bumper)
                 arm.closeGripper();
-            if(gamepad2.dpad_down)
-                pantherArm.armReset();
             if(gamepad2.right_bumper)
                 arm.openGripper();
             if(gamepad2.a)
@@ -222,7 +220,7 @@ public class controller extends LinearOpMode {
             if(gamepad2.right_stick_button)
                 pantherArm.armReset();
 
-            if(coneDectc.isPressed()&&gamepad2.left_stick_button){
+            if(coneDectc.isPressed()&&gamepad2.dpad_down){
                 arm.closeGripper();
                 pantherArm.armReset();
                 arm.moveToTick(10);

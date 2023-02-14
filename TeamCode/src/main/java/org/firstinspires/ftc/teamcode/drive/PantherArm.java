@@ -17,17 +17,13 @@ public class PantherArm {
 
     public void armReset() {
         arm.closeGripper();
-        while ( !(armLimit.isPressed())) {
-            arm.moveToTick(arm.getArmMotorCurrentPosition()-2000);
-            while (arm.getArmMotorTargetPosition()!=arm.getArmMotorCurrentPosition()&&
-                    !(armLimit.isPressed())) {
-                if(armLimit.isPressed()) {
-                    arm.resetArmMotor();
-                    break;
-                }
-            }
+        while (!armLimit.isPressed())
+        {
+            arm.move(-1);
         }
+        arm.move(0);
         arm.resetArmMotor();
+        arm.runToPostion();
     }
     public void grabTopCone(){
         arm.closeGripper();
@@ -40,5 +36,16 @@ public class PantherArm {
         while (arm.getArmMotorTargetPosition()!=arm.getArmMotorCurrentPosition()) {
             //let arm move
         }
+    }
+    public void grabCone(){
+        new Thread(()-> {
+            arm.closeGripper();
+            arm.moveToTick(1);
+            while (!armLimit.isPressed()) {
+            }
+            arm.openGripper();
+            arm.moveToTick(300);
+        }).start();
+
     }
 }

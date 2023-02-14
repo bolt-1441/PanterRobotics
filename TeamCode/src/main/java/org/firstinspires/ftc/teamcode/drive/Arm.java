@@ -22,14 +22,14 @@ public class Arm {
     }
 
     public void moveToTick(int tick){
-        Thread thread = new Thread(()->{
+        new Thread(() -> {
             armMotor.setTargetPosition(tick);
             armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             armMotor.setPower(1);
-            while(armMotor.getTargetPosition() != armMotor.getCurrentPosition()) {
+            while (armMotor.getTargetPosition() != armMotor.getCurrentPosition()) {
                 //Wait for the arm to reach the target height
-            }});
-        thread.start();
+            }
+        }).start();
     }
 
     public void moveToHeight(double height) {
@@ -85,6 +85,13 @@ public class Arm {
             //Wait for the arm to reach the target height
         }
         armMotor.setPower(0);
+    }
+    public void move(int power){
+        armMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        armMotor.setPower(power);
+    }
+    public void runToPostion(){
+        armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
     public double getGripperPos(){return griper.getPosition();}
     public void openGripper() {

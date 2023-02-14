@@ -221,12 +221,7 @@ public class controller extends LinearOpMode {
                 pantherArm.armReset();
 
             if(coneDectc.isPressed()&&gamepad2.dpad_down){
-                arm.closeGripper();
-                pantherArm.armReset();
-                arm.moveToTick(10);
-                arm.openGripper();
-                sleep(50);
-                arm.moveToTick(250);
+                    pantherArm.grabCone();
             }
             setBrightnessFlash(.9);
 

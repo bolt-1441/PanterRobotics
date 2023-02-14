@@ -129,9 +129,9 @@ public class AutonomousRightV2 extends LinearOpMode {
         turret.setTargetPosition(1200);
         samePostitionarm();
         drive.followTrajectorySequence(traj3);
-        if(lineTrackerLeftBack.isOnLine()&&lineTrackerLeftForward.isOnLine())
+        if(lineTrackerLeftBack.isOnLine()||lineTrackerLeftForward.isOnLine())
             val+=2;
-        if (lineTrackerRightBack.isOnLine()&&lineTrackerRightForward.isOnLine())
+        if (lineTrackerRightBack.isOnLine()||lineTrackerRightForward.isOnLine())
             val-=2;
         else
             val=0;

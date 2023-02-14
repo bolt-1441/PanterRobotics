@@ -23,10 +23,12 @@ package org.firstinspires.ftc.teamcode.drive;
         import com.qualcomm.robotcore.hardware.Servo;
         import com.qualcomm.robotcore.hardware.SwitchableLight;
 
+        import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
         import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
 
         import java.util.Arrays;
         import java.util.Queue;
+        import java.util.concurrent.atomic.AtomicBoolean;
         import java.util.concurrent.atomic.AtomicInteger;
 
 @Autonomous(group = "drive")
@@ -43,6 +45,11 @@ public class AutonomousRightV2 extends LinearOpMode {
         Pose2d startPose = new Pose2d(0, 0, Math.toRadians(0));
 
         drive.setPoseEstimate(startPose);
+        Arm arm = new Arm(hardwareMap,"turret","wrist");
+        LimitSwitch coneDectc = new LimitSwitch(hardwareMap,"limitSwitchA",false);
+        PantherArm pantherArm = new PantherArm(arm,new LimitSwitch(hardwareMap,"limitSwitch",false),
+                coneDectc);
+
         colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
         wrist = hardwareMap.get(Servo.class,"wrist");
         turret = hardwareMap.get(DcMotor.class, "turret");
@@ -164,10 +171,22 @@ public class AutonomousRightV2 extends LinearOpMode {
                 .lineToLinearHeading(new Pose2d(53,-35,Math.toRadians(-90)))
                 .build();
         sleep(600);
+        AtomicBoolean running = new AtomicBoolean(true);
+        Thread thread = new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                while (running.get()) {
+                    while (!coneDectc.isPressed()) {
+                    }
+                    sleep(500);
+                    pantherArm.grabTopCone();
+                }
+            }
+        });
+        thread.start();
         drive.followTrajectorySequence(compensate);
-        turret.setPower(.7);
-        turret.setTargetPosition(600);
-        samePostitionarm();
+        running.set(false);
         sleep(500);
         wrist.setPosition(1);
         turret.setPower(1);
@@ -187,17 +206,6 @@ public class AutonomousRightV2 extends LinearOpMode {
         turret.setTargetPosition(200);
         samePostitionarm();
         //Reads the cone and sets the claw down
-
-        /*
-        this is an idea i have to line up the bot on the tape in front of the cone stack
-                -Teddy
-        while(<not_lined_up>){
-            TrajectorySequence traj99 = drive.trajectorySequenceBuilder(traj98.end())
-                    .lineToLinearHeading(new Pose2d(<curent_position> -/+ <corection_val_to_move_to_line>))
-                    .build();
-            drive.followTrajectorySequence(traj99)
-        }
-         */
 
         if(pos == 1){
             drive.followTrajectorySequence(trajL);

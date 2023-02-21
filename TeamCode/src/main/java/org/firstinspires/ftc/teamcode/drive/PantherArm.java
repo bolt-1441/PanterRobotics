@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
 
-public class PantherArm {
+public class PantherArm extends Thread{
     private Arm arm;
     private LimitSwitch armLimit;
     private LimitSwitch coneLimit;
@@ -25,13 +25,15 @@ public class PantherArm {
         arm.resetArmMotor();
         arm.runToPostion();
     }
-    public void grabTopCone(){
+    public void grabTopCone() throws InterruptedException {
         arm.closeGripper();
-        arm.moveToTick(500);
+        arm.moveToTick(560);
         while (arm.getArmMotorTargetPosition()!=arm.getArmMotorCurrentPosition()) {
             //let arm move
         }
+        sleep(75);
         arm.openGripper();
+        sleep(85);
         arm.moveToTick(1400);
         while (arm.getArmMotorTargetPosition()!=arm.getArmMotorCurrentPosition()) {
             //let arm move
@@ -44,7 +46,7 @@ public class PantherArm {
             while (!armLimit.isPressed()) {
             }
             arm.openGripper();
-            arm.moveToTick(300);
+            arm.moveToTick(350);
         }).start();
 
     }

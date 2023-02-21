@@ -188,17 +188,17 @@ public class controller extends LinearOpMode {
                 rotate(135,1);
             }
             if(gamepad2.left_bumper)
-                arm.closeGripper();
+                wrist.setPosition(.5);
             if(gamepad2.right_bumper)
-                arm.openGripper();
+                wrist.setPosition(1);
             if(gamepad2.a)
-                arm.moveToTick(700);
+                turret.setTargetPosition(700);
             if(gamepad2.b)
-                arm.moveToTick(1500);
+                turret.setTargetPosition(1500);
             if(gamepad2.y)
-                arm.moveToTick(2250);
+                turret.setTargetPosition(2250);
             if(gamepad2.x)
-                arm.moveToTick(3000);
+                turret.setTargetPosition(3001);
             if((turret.getTargetPosition() != turret.getCurrentPosition())){
                 turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 if(gamepad2.right_trigger >.1){
@@ -221,8 +221,16 @@ public class controller extends LinearOpMode {
                 pantherArm.armReset();
 
             if(coneDectc.isPressed()&&gamepad2.dpad_down){
-                    pantherArm.grabCone();
+                wrist.setPosition(.5);
+                sleep(50);
+                turret.setTargetPosition(10);
+                sleep(200);
+                wrist.setPosition(1);
+                sleep(50);
+                turret.setTargetPosition(350);
             }
+            if(gamepad2.dpad_up)
+                pantherArm.grabCone();
             setBrightnessFlash(.9);
 
 //

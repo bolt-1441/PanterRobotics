@@ -71,7 +71,7 @@ public class AutonomousRightV2 extends LinearOpMode {
         int val = 0;
         /////////////////////////THIS IS WHERE IT STARTS/////EVERYTHING BEFORE HERE IS INITIALIZATION/////////////
         waitForStart();
-        sleep(700);
+        sleep(50);//changed last
         turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         turret.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -83,7 +83,7 @@ public class AutonomousRightV2 extends LinearOpMode {
         int pos = 0;
         if (isStopRequested()) return;
         TrajectoryVelocityConstraint velConstraint1 = new MinVelocityConstraint(Arrays.asList(
-                new TranslationalVelocityConstraint(10)
+                new TranslationalVelocityConstraint(12)
         ));
         TrajectoryVelocityConstraint velConstraint2 = new MinVelocityConstraint(Arrays.asList(
                 new TranslationalVelocityConstraint(35)
@@ -118,10 +118,11 @@ public class AutonomousRightV2 extends LinearOpMode {
 
         drive.followTrajectorySequence(trajSeq);
         pos = runSample();
-        sleep(100);
+        sleep(150);
         drive.followTrajectorySequence(trajSeq2);
         drive.followTrajectorySequence(traj2);
-        turret.setTargetPosition(1100);
+        arm.moveToTickT(1100);
+        //turret.setTargetPosition(1100);
         samePostitionarm();
         sleep(400);
         wrist.setPosition(.5);
@@ -137,25 +138,29 @@ public class AutonomousRightV2 extends LinearOpMode {
             val=0;
         telemetry.addData("val:",val);
         telemetry.update();
+        // This marker runs at the point that gets
+        // closest to the (20, 20) coordinate
+        // Run your action in here!
         TrajectorySequence compensate = drive.trajectorySequenceBuilder(traj3.end())
                 .setVelConstraint(velConstraint1)
+                .lineToLinearHeading(new Pose2d(53+val,-38, Math.toRadians(-90)))
                 .lineToLinearHeading(new Pose2d(53+val,-37, Math.toRadians(-90)))
-                .lineToLinearHeading(new Pose2d(53+val,-36, Math.toRadians(-90)))
                 .build();
         //heads to place cone
         TrajectorySequence traj4 = drive.trajectorySequenceBuilder(compensate.end())
                 .lineToLinearHeading(new Pose2d(55,3, Math.toRadians(-90)))
-                .addSpatialMarker(new Vector2d(56, 1), () -> {
+                .setVelConstraint(velConstraint1)
+                .lineToLinearHeading(new Pose2d(57, 4, Math.toRadians(-180)))
+                .lineToLinearHeading(new Pose2d(55, 4, Math.toRadians(-180)))
+                .waitSeconds(1)
+                .lineToLinearHeading(new Pose2d(51, 5, Math.toRadians(-180)))
+                .addSpatialMarker(new Vector2d(52, 4), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
-                    turret.setPower(1);
-                    turret.setTargetPosition(2300);
-                    samePostitionarm();
+                    arm.moveToTickT(2300);
                     // Run your action in here!
                 })
-                .lineToLinearHeading(new Pose2d(55, 4, Math.toRadians(-180)))
-                .lineToLinearHeading(new Pose2d(51, 3, Math.toRadians(-180)))
-                .waitSeconds(1)
+                .lineToLinearHeading(new Pose2d(52, 3, Math.toRadians(-180)))
                 .build();
         TrajectorySequence traj5 = drive.trajectorySequenceBuilder(traj4.end())
                 .lineToLinearHeading(new Pose2d(55, 4, Math.toRadians(-180)))
@@ -172,15 +177,15 @@ public class AutonomousRightV2 extends LinearOpMode {
                 .build();
         sleep(600);
         AtomicBoolean running = new AtomicBoolean(true);
-        Thread thread = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                while (running.get()) {
-                    while (!coneDectc.isPressed()) {
-                    }
-                    sleep(500);
+        Thread thread = new Thread(() -> {
+            while (running.get()) {
+                while (!coneDectc.isPressed()) {
+                }
+                sleep(370);
+                try {
                     pantherArm.grabTopCone();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }
         });
@@ -216,6 +221,8 @@ public class AutonomousRightV2 extends LinearOpMode {
         else{
             drive.followTrajectorySequence(trajR);
         }
+        telemetry.addData("pos",pos);
+        telemetry.update();
         sleep(5000);
     }
     private void samePostitionarm(){
@@ -311,11 +318,7 @@ public class AutonomousRightV2 extends LinearOpMode {
         telemetry.update();
 
         // Change the Robot Controller's background color to match the color detected by the color sensor.
-        relativeLayout.post(new Runnable() {
-            public void run() {
-                relativeLayout.setBackgroundColor(Color.HSVToColor(hsvValues));
-            }
-        });
+        relativeLayout.post(() -> relativeLayout.setBackgroundColor(Color.HSVToColor(hsvValues)));
         double red = colors.red;
         double green = colors.green;
         double blue = colors.blue;

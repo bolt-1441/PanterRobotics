@@ -27,10 +27,13 @@ import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
 
 import java.util.Arrays;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Autonomous(group = "drive")
 public class testingClass extends LinearOpMode {
+    private Servo wrist = null;
+    private DcMotor turret = null;
     NormalizedColorSensor colorSensor;
     View relativeLayout;
 
@@ -41,30 +44,48 @@ public class testingClass extends LinearOpMode {
         Pose2d startPose = new Pose2d(0, 0, Math.toRadians(0));
 
         drive.setPoseEstimate(startPose);
-        colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
-        Servo claw = hardwareMap.get(Servo.class,"wrist");
         Arm arm = new Arm(hardwareMap,"turret","wrist");
+        org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch coneDectc = new org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch(hardwareMap,"limitSwitchA",false);
+        PantherArm pantherArm = new PantherArm(arm,new org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch(hardwareMap,"limitSwitch",false),
+                coneDectc);
 
+        colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
+        wrist = hardwareMap.get(Servo.class,"wrist");
+        turret = hardwareMap.get(DcMotor.class, "turret");
+        LineTracker lineTrackerLeftForward = new LineTracker(hardwareMap,"lineTrackerLeftForward");
+        LineTracker lineTrackerRightForward = new LineTracker(hardwareMap,"lineTrackerRightForward");
+        LineTracker lineTrackerLeftBack = new LineTracker(hardwareMap,"lineTrackerRightBack");
+        LineTracker lineTrackerRightBack = new LineTracker(hardwareMap,"lineTrackerLeftBack");
+
+        turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        turret.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         int relativeLayoutId = hardwareMap.appContext.getResources().getIdentifier("RelativeLayout", "id", hardwareMap.appContext.getPackageName());
         relativeLayout = ((Activity) hardwareMap.appContext).findViewById(relativeLayoutId);
 
         runSample(); // actually execute the sample
         NormalizedRGBA colors = colorSensor.getNormalizedColors();
-        arm.openGripper();
-        arm.moveToTick(100);
-        sleep(10);// TODO: 2/9/2023 run arm in thread bc it fucks up the base bc time moves and the arm cant stop  
+        wrist.setPosition(1);
+        sleep(500);
+        int val = 0;
         /////////////////////////THIS IS WHERE IT STARTS/////EVERYTHING BEFORE HERE IS INITIALIZATION/////////////
         waitForStart();
-        arm.moveToTick(700);
-        sleep(10);
+        sleep(50);//changed last
+        turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        turret.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        samePostitionarm();
+        turret.setTargetPosition(700);
+        turret.setPower(.7);
+        samePostitionarm();
+        sleep(500);
         int pos = 0;
         if (isStopRequested()) return;
         TrajectoryVelocityConstraint velConstraint1 = new MinVelocityConstraint(Arrays.asList(
-                new TranslationalVelocityConstraint(10)
+                new TranslationalVelocityConstraint(12)
         ));
         TrajectoryVelocityConstraint velConstraint2 = new MinVelocityConstraint(Arrays.asList(
-                new TranslationalVelocityConstraint(15)
+                new TranslationalVelocityConstraint(35)
         ));
         //Heads to cone and then reads the cone
         TrajectorySequence trajSeq = drive.trajectorySequenceBuilder(startPose)
@@ -74,41 +95,71 @@ public class testingClass extends LinearOpMode {
                 .build();
         //Goes to the end of the field and lifts up the claw
         TrajectorySequence trajSeq2 = drive.trajectorySequenceBuilder(trajSeq.end())
-                .setVelConstraint(velConstraint2)
-                .splineTo(new Vector2d(58,-6),Math.toRadians(0))
-                .addSpatialMarker(new Vector2d(64, -8), () -> {
+                .splineTo(new Vector2d(57,-6),Math.toRadians(0))
+                .addSpatialMarker(new Vector2d(57, -8), () -> {
                     // This marker runs at the point that gets
-                    // closest to the coordinate
-                    arm.moveToTick(1400);
+                    // closest to the (20, 20) coordinate
+                    turret.setPower(1);
+                    turret.setTargetPosition(1400);
+                    samePostitionarm();
                     // Run your action in here!
                 })
                 .build();
         //Sets up for the cone placement
         TrajectorySequence traj2 = drive.trajectorySequenceBuilder(trajSeq2.end())
-                .lineToLinearHeading(new Pose2d(50, -17, Math.toRadians(-180)))
+                .lineToLinearHeading(new Pose2d(49, -17, Math.toRadians(-180)))
                 .build();
         //Heads to the cone stack
         TrajectorySequence traj3 = drive.trajectorySequenceBuilder(traj2.end())
                 .lineToLinearHeading(new Pose2d(58,-21, Math.toRadians(-180)))
-                .lineToLinearHeading(new Pose2d(54,-30, Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(53,-28, Math.toRadians(-90)))
+                .build();
+
+        drive.followTrajectorySequence(trajSeq);
+        pos = runSample();
+        sleep(150);
+        drive.followTrajectorySequence(trajSeq2);
+        drive.followTrajectorySequence(traj2);
+        arm.moveToTickT(1100);
+        //turret.setTargetPosition(1100);
+        samePostitionarm();
+        sleep(400);
+        wrist.setPosition(.5);
+        turret.setPower(1);
+        turret.setTargetPosition(1200);
+        samePostitionarm();
+        drive.followTrajectorySequence(traj3);
+        if(lineTrackerLeftBack.isOnLine()||lineTrackerLeftForward.isOnLine())
+            val+=2;
+        if (lineTrackerRightBack.isOnLine()||lineTrackerRightForward.isOnLine())
+            val-=2;
+        else
+            val=0;
+        telemetry.addData("val:",val);
+        telemetry.update();
+        // This marker runs at the point that gets
+        // closest to the (20, 20) coordinate
+        // Run your action in here!
+        TrajectorySequence compensate = drive.trajectorySequenceBuilder(traj3.end())
                 .setVelConstraint(velConstraint1)
-                .lineToLinearHeading(new Pose2d(52,-36, Math.toRadians(-90)))
-                .lineToLinearHeading(new Pose2d(52,-35, Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(53+val,-38, Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(53+val,-37, Math.toRadians(-90)))
                 .build();
         //heads to place cone
-        TrajectorySequence traj4 = drive.trajectorySequenceBuilder(traj3.end())
-                .lineToLinearHeading(new Pose2d(54,5, Math.toRadians(-90)))
-                .addSpatialMarker(new Vector2d(57, -10), () -> {
+        TrajectorySequence traj4 = drive.trajectorySequenceBuilder(compensate.end())
+                .lineToLinearHeading(new Pose2d(52, -17, Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(49, -17, Math.toRadians(-180)))
+                .addSpatialMarker(new Vector2d(52, -20), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
-                    arm.moveToTick(2100);
+                    turret.setTargetPosition(1400);
+                    samePostitionarm();
                     // Run your action in here!
                 })
-                .lineToLinearHeading(new Pose2d(51, 4, Math.toRadians(-180)))
-                .waitSeconds(1)
                 .build();
         TrajectorySequence traj5 = drive.trajectorySequenceBuilder(traj4.end())
-                .lineToLinearHeading(new Pose2d(55, 4, Math.toRadians(-180)))
+                .lineToLinearHeading(new Pose2d(58,-21, Math.toRadians(-180)))
+                .lineToLinearHeading(new Pose2d(53,-28, Math.toRadians(-90)))
                 .build();
         //TODO MORE THAN ONE CONE PLACEMENT
         TrajectorySequence trajL = drive.trajectorySequenceBuilder(traj5.end())
@@ -118,36 +169,43 @@ public class testingClass extends LinearOpMode {
                 .lineToLinearHeading(new Pose2d(53,-7,Math.toRadians(-90)))
                 .build();
         TrajectorySequence trajR = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(53,-30,Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(53,-35,Math.toRadians(-90)))
                 .build();
-        drive.followTrajectorySequence(trajSeq);
-        pos = runSample();
-        sleep(10);
-        drive.followTrajectorySequence(trajSeq2);
-        sleep(10);
-        drive.followTrajectorySequence(traj2);
-        arm.moveToTick(1000);
-        sleep(10);
-        arm.closeGripper();
-        sleep(10);
-        arm.moveToTick(1200);
-        sleep(10);
-        drive.followTrajectorySequence(traj3);
-        arm.moveToTick(540);
+        sleep(600);
+        AtomicBoolean running = new AtomicBoolean(true);
+        Thread thread = new Thread(() -> {
+            while (running.get()) {
+                while (!coneDectc.isPressed()) {
+                }
+                sleep(370);
+                try {
+                    pantherArm.grabTopCone();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        thread.start();
+        drive.followTrajectorySequence(compensate);
+        running.set(false);
+        sleep(500);
+        wrist.setPosition(1);
+        turret.setPower(1);
+        sleep(500);
+        turret.setTargetPosition(1400);
+        samePostitionarm();
         sleep(400);
-        arm.openGripper();
-        sleep(7000);
-        arm.moveToTick(1400);
-        sleep(400);
-        requestOpModeStop();
         drive.followTrajectorySequence(traj4);
-        arm.moveToTick(1900);
-        arm.closeGripper();
+        turret.setTargetPosition(1950);
+        samePostitionarm();
+        wrist.setPosition(.5);
         sleep(200);
-        arm.moveToTick(2000);
+        turret.setTargetPosition(2000);
+        samePostitionarm();
         sleep(1000);
         drive.followTrajectorySequence(traj5);
-
+        turret.setTargetPosition(200);
+        samePostitionarm();
         //Reads the cone and sets the claw down
 
         if(pos == 1){
@@ -159,6 +217,9 @@ public class testingClass extends LinearOpMode {
         else{
             drive.followTrajectorySequence(trajR);
         }
+        telemetry.addData("pos",pos);
+        telemetry.update();
+        sleep(5000);
     }
     //HOW TO MAKE THE ROBOT MOE TO A SPECIFIC SPOT//
 //    drive.followTrajectory(
@@ -166,6 +227,13 @@ public class testingClass extends LinearOpMode {
 //            .splineTo(new Vector2d(0, 0), Math.toRadians(180))
 //            .build()
 //        );
+    private void samePostitionarm(){
+        if(turret.getTargetPosition() != turret.getCurrentPosition()){
+            turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            telemetry.addData("Status", "Run Time: " + turret.getCurrentPosition());
+            telemetry.update();
+        }
+    }
     protected int runSample() {
         // You can give the sensor a gain value, will be multiplied by the sensor's raw value before the
         // normalized color values are calculated. Color sensors (especially the REV Color Sensor V3)

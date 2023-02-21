@@ -20,16 +20,35 @@ public class Arm {
         this.armMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         this.armMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
-
-    public void moveToTick(int tick){
+    public void moveToTickT(int tick){
         new Thread(() -> {
             armMotor.setTargetPosition(tick);
             armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             armMotor.setPower(1);
-            while (armMotor.getTargetPosition() != armMotor.getCurrentPosition()) {
+            boolean timeout = true;
+            int num = 0;
+            while (armMotor.getTargetPosition() != armMotor.getCurrentPosition() && timeout) {
                 //Wait for the arm to reach the target height
+                if(num==100){
+                    timeout=false;
+                }
+                num++;
             }
         }).start();
+    }
+    public void moveToTick(int tick){
+            armMotor.setTargetPosition(tick);
+            armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            armMotor.setPower(1);
+            boolean timeout = true;
+            int num = 0;
+            while (armMotor.getTargetPosition() != armMotor.getCurrentPosition() && timeout) {
+                //Wait for the arm to reach the target height
+                if(num==50){
+                    timeout=false;
+                }
+                num++;
+            }
     }
 
     public void moveToHeight(double height) {

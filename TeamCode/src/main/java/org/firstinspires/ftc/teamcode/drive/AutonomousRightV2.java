@@ -1,35 +1,31 @@
 
 package org.firstinspires.ftc.teamcode.drive;
 
-        import static org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.CM;
+import static org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit.CM;
 
-        import android.app.Activity;
-        import android.graphics.Color;
-        import android.view.View;
+import android.app.Activity;
+import android.graphics.Color;
+import android.view.View;
 
-        import com.acmerobotics.roadrunner.geometry.Pose2d;
-        import com.acmerobotics.roadrunner.geometry.Vector2d;
-        import com.acmerobotics.roadrunner.trajectory.Trajectory;
-        import com.acmerobotics.roadrunner.trajectory.constraints.AngularVelocityConstraint;
-        import com.acmerobotics.roadrunner.trajectory.constraints.MinVelocityConstraint;
-        import com.acmerobotics.roadrunner.trajectory.constraints.TrajectoryVelocityConstraint;
-        import com.acmerobotics.roadrunner.trajectory.constraints.TranslationalVelocityConstraint;
-        import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-        import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-        import com.qualcomm.robotcore.hardware.DcMotor;
-        import com.qualcomm.robotcore.hardware.DistanceSensor;
-        import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-        import com.qualcomm.robotcore.hardware.NormalizedRGBA;
-        import com.qualcomm.robotcore.hardware.Servo;
-        import com.qualcomm.robotcore.hardware.SwitchableLight;
+import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.acmerobotics.roadrunner.trajectory.constraints.MinVelocityConstraint;
+import com.acmerobotics.roadrunner.trajectory.constraints.TrajectoryVelocityConstraint;
+import com.acmerobotics.roadrunner.trajectory.constraints.TranslationalVelocityConstraint;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
+import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.SwitchableLight;
 
-        import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
-        import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
+import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
+import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
 
-        import java.util.Arrays;
-        import java.util.Queue;
-        import java.util.concurrent.atomic.AtomicBoolean;
-        import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Autonomous(group = "drive")
 public class AutonomousRightV2 extends LinearOpMode {
@@ -65,7 +61,7 @@ public class AutonomousRightV2 extends LinearOpMode {
         relativeLayout = ((Activity) hardwareMap.appContext).findViewById(relativeLayoutId);
 
         runSample(); // actually execute the sample
-        NormalizedRGBA colors = colorSensor.getNormalizedColors();
+        colorSensor.getNormalizedColors();
         wrist.setPosition(1);
         sleep(500);
         int val = 0;
@@ -80,10 +76,10 @@ public class AutonomousRightV2 extends LinearOpMode {
         turret.setPower(.7);
         samePostitionarm();
         sleep(500);
-        int pos = 0;
+        int pos;
         if (isStopRequested()) return;
         TrajectoryVelocityConstraint velConstraint1 = new MinVelocityConstraint(Arrays.asList(
-                new TranslationalVelocityConstraint(12)
+                new TranslationalVelocityConstraint(14)
         ));
         TrajectoryVelocityConstraint velConstraint2 = new MinVelocityConstraint(Arrays.asList(
                 new TranslationalVelocityConstraint(35)
@@ -91,8 +87,8 @@ public class AutonomousRightV2 extends LinearOpMode {
         //Heads to cone and then reads the cone
         TrajectorySequence trajSeq = drive.trajectorySequenceBuilder(startPose)
                 .setVelConstraint(velConstraint1)
-                .splineToConstantHeading(new Vector2d(10,-6),Math.toRadians(0))
-                .splineTo(new Vector2d(25,-6), Math.toRadians(0))
+                .splineToConstantHeading(new Vector2d(10,-7),Math.toRadians(0))
+                .splineTo(new Vector2d(25,-7), Math.toRadians(0))
                 .build();
         //Goes to the end of the field and lifts up the claw
         TrajectorySequence trajSeq2 = drive.trajectorySequenceBuilder(trajSeq.end())
@@ -149,12 +145,17 @@ public class AutonomousRightV2 extends LinearOpMode {
         //heads to place cone
         TrajectorySequence traj4 = drive.trajectorySequenceBuilder(compensate.end())
                 .lineToLinearHeading(new Pose2d(55,3, Math.toRadians(-90)))
-                .setVelConstraint(velConstraint1)
+                .addSpatialMarker(new Vector2d(55, -35), () -> {
+                    // This marker runs at the point that gets
+                    // closest to the (20, 20) coordinate
+                    arm.moveToTickT(500);
+                    // Run your action in here!
+                })
                 .lineToLinearHeading(new Pose2d(57, 4, Math.toRadians(-180)))
                 .lineToLinearHeading(new Pose2d(55, 4, Math.toRadians(-180)))
                 .waitSeconds(1)
                 .lineToLinearHeading(new Pose2d(51, 5, Math.toRadians(-180)))
-                .addSpatialMarker(new Vector2d(52, 4), () -> {
+                .addSpatialMarker(new Vector2d(53, 2), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
                     arm.moveToTickT(2300);
@@ -173,20 +174,22 @@ public class AutonomousRightV2 extends LinearOpMode {
                 .lineToLinearHeading(new Pose2d(53,-7,Math.toRadians(-90)))
                 .build();
         TrajectorySequence trajR = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(53,-35,Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(53,-32,Math.toRadians(-90)))
                 .build();
         sleep(600);
-        AtomicBoolean running = new AtomicBoolean(true);
+        final AtomicBoolean running = new AtomicBoolean(true);
         Thread thread = new Thread(() -> {
             while (running.get()) {
-                while (!coneDectc.isPressed()) {
-                }
-                sleep(370);
+                while (!coneDectc.isPressed()){}
+                sleep(400);
                 try {
                     pantherArm.grabTopCone();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
+                telemetry.addData("thread is running", "true");
+                telemetry.addData("thread should bve running",running.get());
+                telemetry.update();
             }
         });
         thread.start();
@@ -258,8 +261,6 @@ public class AutonomousRightV2 extends LinearOpMode {
 
         // xButtonPreviouslyPressed and xButtonCurrentlyPressed keep track of the previous and current
         // state of the X button on the gamepad
-        boolean xButtonPreviouslyPressed = false;
-        boolean xButtonCurrentlyPressed = false;
 
         // Get a reference to our sensor object. It's recommended to use NormalizedColorSensor over
         // ColorSensor, because NormalizedColorSensor consistently gives values between 0 and 1, while

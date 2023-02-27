@@ -222,15 +222,15 @@ public class controller extends LinearOpMode {
 
             if(coneDectc.isPressed()&&gamepad2.dpad_down){
                 wrist.setPosition(.5);
-                sleep(50);
-                turret.setTargetPosition(10);
-                sleep(200);
+                sleep(100);
+                turret.setTargetPosition(5);
+                sleep(270);
                 wrist.setPosition(1);
-                sleep(50);
+                sleep(75);
                 turret.setTargetPosition(350);
             }
             if(gamepad2.dpad_up)
-                pantherArm.grabCone();
+                turret.setTargetPosition(5);
             setBrightnessFlash(.9);
 
 //

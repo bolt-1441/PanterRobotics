@@ -28,16 +28,16 @@ public class PantherArm extends Thread{
     public void grabTopCone() throws InterruptedException {
         arm.closeGripper();
         arm.moveToTick(560);
-        while (arm.getArmMotorTargetPosition()!=arm.getArmMotorCurrentPosition()) {
+        //while (arm.getArmMotorTargetPosition()!=arm.getArmMotorCurrentPosition()) {
             //let arm move
-        }
+        //}
         sleep(75);
         arm.openGripper();
-        sleep(85);
+        sleep(100);
         arm.moveToTick(1400);
-        while (arm.getArmMotorTargetPosition()!=arm.getArmMotorCurrentPosition()) {
+        //while (arm.getArmMotorTargetPosition()!=arm.getArmMotorCurrentPosition()) {
             //let arm move
-        }
+        //}
     }
     public void grabCone(){
         new Thread(()-> {

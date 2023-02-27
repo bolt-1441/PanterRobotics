@@ -22,6 +22,7 @@ import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.SwitchableLight;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
 import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
@@ -83,7 +84,7 @@ public class AutonomousLeftV2 extends LinearOpMode {
         int pos = 0;
         if (isStopRequested()) return;
         TrajectoryVelocityConstraint velConstraint1 = new MinVelocityConstraint(Arrays.asList(
-                new TranslationalVelocityConstraint(12)
+                new TranslationalVelocityConstraint(14)
         ));
         TrajectoryVelocityConstraint velConstraint2 = new MinVelocityConstraint(Arrays.asList(
                 new TranslationalVelocityConstraint(35)
@@ -149,15 +150,20 @@ public class AutonomousLeftV2 extends LinearOpMode {
         //heads to place cone
         TrajectorySequence traj4 = drive.trajectorySequenceBuilder(compensate.end())
                 .lineToLinearHeading(new Pose2d(55,-2, Math.toRadians(90)))
-                .setVelConstraint(velConstraint1)
+                .addSpatialMarker(new Vector2d(55, 30), () -> {
+                    // This marker runs at the point that gets
+                    // closest to the (20, 20) coordinate
+                    arm.moveToTickT(500);
+                    // Run your action in here!
+                })
                 .lineToLinearHeading(new Pose2d(57, -3, Math.toRadians(180)))
                 .lineToLinearHeading(new Pose2d(55, -3, Math.toRadians(180)))
                 .waitSeconds(1)
                 .lineToLinearHeading(new Pose2d(51, -4, Math.toRadians(180)))
-                .addSpatialMarker(new Vector2d(52, -3), () -> {
+                .addSpatialMarker(new Vector2d(52, -2), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
-                    arm.moveToTickT(2300);
+                    arm.moveToTickT(2200);
                     // Run your action in here!
                 })
                 .lineToLinearHeading(new Pose2d(52, -2, Math.toRadians(180)))
@@ -173,13 +179,14 @@ public class AutonomousLeftV2 extends LinearOpMode {
                 .lineToLinearHeading(new Pose2d(53,7,Math.toRadians(90)))
                 .build();
         TrajectorySequence trajR = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(52,38,Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(52,35,Math.toRadians(90)))
                 .build();
         sleep(600);
         AtomicBoolean running = new AtomicBoolean(true);
         Thread thread = new Thread(() -> {
-            while (running.get()) {
-                while (!coneDectc.isPressed()) {
+            ElapsedTime elapsedTime = new ElapsedTime();
+            //while (running.get()) {
+                while (!coneDectc.isPressed()&& elapsedTime.seconds()<5) {
                 }
                 sleep(370);
                 try {
@@ -187,7 +194,7 @@ public class AutonomousLeftV2 extends LinearOpMode {
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-            }
+            //}
         });
         thread.start();
         drive.followTrajectorySequence(compensate);
@@ -212,7 +219,7 @@ public class AutonomousLeftV2 extends LinearOpMode {
         samePostitionarm();
         //Reads the cone and sets the claw down
 
-        if(pos == 1){
+        if(pos == 3){
             drive.followTrajectorySequence(trajL);
         }
         else if(pos == 2){

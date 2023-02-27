@@ -179,8 +179,8 @@ public class AutonomousRightV2 extends LinearOpMode {
         sleep(600);
         final AtomicBoolean running = new AtomicBoolean(true);
         Thread thread = new Thread(() -> {
-            while (running.get()) {
-                while (!coneDectc.isPressed()){}
+            //while (running.get()) {
+                //while (!coneDectc.isPressed()){}
                 sleep(400);
                 try {
                     pantherArm.grabTopCone();
@@ -190,7 +190,7 @@ public class AutonomousRightV2 extends LinearOpMode {
                 telemetry.addData("thread is running", "true");
                 telemetry.addData("thread should bve running",running.get());
                 telemetry.update();
-            }
+           // }
         });
         thread.start();
         drive.followTrajectorySequence(compensate);

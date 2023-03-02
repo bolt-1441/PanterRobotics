@@ -68,7 +68,6 @@ public class AutonomousLeftV2 extends LinearOpMode {
         runSample(); // actually execute the sample
         NormalizedRGBA colors = colorSensor.getNormalizedColors();
         wrist.setPosition(1);
-        sleep(500);
         int val = 0;
         /////////////////////////THIS IS WHERE IT STARTS/////EVERYTHING BEFORE HERE IS INITIALIZATION/////////////
         waitForStart();
@@ -80,7 +79,7 @@ public class AutonomousLeftV2 extends LinearOpMode {
         turret.setTargetPosition(700);
         turret.setPower(.7);
         samePostitionarm();
-        sleep(500);
+        sleep(300);
         int pos = 0;
         if (isStopRequested()) return;
         TrajectoryVelocityConstraint velConstraint1 = new MinVelocityConstraint(Arrays.asList(
@@ -153,7 +152,7 @@ public class AutonomousLeftV2 extends LinearOpMode {
                 .addSpatialMarker(new Vector2d(55, 30), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
-                    arm.moveToTickT(500);
+                    arm.moveToTickT(400);
                     // Run your action in here!
                 })
                 .lineToLinearHeading(new Pose2d(57, -3, Math.toRadians(180)))

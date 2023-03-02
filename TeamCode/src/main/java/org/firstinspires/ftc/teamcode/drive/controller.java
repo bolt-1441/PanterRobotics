@@ -188,9 +188,9 @@ public class controller extends LinearOpMode {
                 rotate(135,1);
             }
             if(gamepad2.left_bumper)
-                wrist.setPosition(.5);
-            if(gamepad2.right_bumper)
                 wrist.setPosition(1);
+            if(gamepad2.right_bumper)
+                wrist.setPosition(.5);
             if(gamepad2.a)
                 turret.setTargetPosition(700);
             if(gamepad2.b)
@@ -221,11 +221,11 @@ public class controller extends LinearOpMode {
                 pantherArm.armReset();
 
             if(coneDectc.isPressed()&&gamepad2.dpad_down){
-                wrist.setPosition(.5);
+                wrist.setPosition(1);
                 sleep(100);
                 turret.setTargetPosition(5);
                 sleep(270);
-                wrist.setPosition(1);
+                wrist.setPosition(.5);
                 sleep(75);
                 turret.setTargetPosition(350);
             }

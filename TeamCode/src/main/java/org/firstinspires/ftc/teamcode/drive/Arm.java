@@ -114,11 +114,11 @@ public class Arm {
     }
     public double getGripperPos(){return griper.getPosition();}
     public void openGripper() {
-        griper.setPosition(.5);
+        griper.setPosition(1);
     }
 
     public void closeGripper() {
-        griper.setPosition(1);
+        griper.setPosition(.5);
     }
 
     public int getArmMotorCurrentPosition(){

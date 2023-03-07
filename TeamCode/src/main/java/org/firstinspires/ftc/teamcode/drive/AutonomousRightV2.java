@@ -22,21 +22,134 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.SwitchableLight;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
 import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
+import org.openftc.apriltag.AprilTagDetection;
+import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Autonomous(group = "drive")
 public class AutonomousRightV2 extends LinearOpMode {
     private Servo wrist = null;
+
+    OpenCvCamera camera;
+    AprilTagDetectionPipeline aprilTagDetectionPipeline;
+
+    static final double FEET_PER_METER = 3.28084;
+
+    // Lens intrinsics
+    // UNITS ARE PIXELS
+    // NOTE: this calibration is for the C920 webcam at 800x448.
+    // You will need to do your own calibration for other configurations!
+    double fx = 578.272;
+    double fy = 578.272;
+    double cx = 402.145;
+    double cy = 221.506;
+
+    // UNITS ARE METERS
+    double tagsize = 0.166;
+
+    // Tag ID 18 from the 36h11 family
+    int LEFT = 1;
+    int MIDDLE = 2;
+    int RIGHT = 3;
+    AprilTagDetection tagOfInterest = null;
     private DcMotor turret = null;
     NormalizedColorSensor colorSensor;
     View relativeLayout;
+    public Servo wheelLat;
+    public Servo wheelVer;
 
     @Override
     public void runOpMode() throws InterruptedException {
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        camera = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
+        aprilTagDetectionPipeline = new AprilTagDetectionPipeline(tagsize, fx, fy, cx, cy);
+
+        camera.setPipeline(aprilTagDetectionPipeline);
+        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+        {
+            @Override
+            public void onOpened()
+            {
+                camera.startStreaming(800,448, OpenCvCameraRotation.UPRIGHT);
+            }
+
+            @Override
+            public void onError(int errorCode)
+            {
+
+            }
+        });
+
+        telemetry.setMsTransmissionInterval(50);
+
+        /*
+         * The INIT-loop:
+         * This REPLACES waitForStart!
+         */
+        while (!isStarted() && !isStopRequested())
+        {
+            ArrayList<AprilTagDetection> currentDetections = aprilTagDetectionPipeline.getLatestDetections();
+
+            if(currentDetections.size() != 0)
+            {
+                boolean tagFound = false;
+
+                for(AprilTagDetection tag : currentDetections)
+                {
+                    if(tag.id == LEFT ||tag.id == MIDDLE ||tag.id == RIGHT)
+                    {
+                        tagOfInterest = tag;
+                        tagFound = true;
+                        break;
+                    }
+                }
+
+                if(tagFound)
+                {
+                    telemetry.addLine("Tag of interest is in sight!\n\nLocation data:");
+                }
+                else
+                {
+                    telemetry.addLine("Don't see tag of interest :(");
+
+                    if(tagOfInterest == null)
+                    {
+                        telemetry.addLine("(The tag has never been seen)");
+                    }
+                    else
+                    {
+                        telemetry.addLine("\nBut we HAVE seen the tag before; last seen at:");
+                    }
+                }
+
+            }
+            else
+            {
+                telemetry.addLine("Don't see tag of interest :(");
+
+                if(tagOfInterest == null)
+                {
+                    telemetry.addLine("(The tag has never been seen)");
+                }
+                else
+                {
+                    telemetry.addLine("\nBut we HAVE seen the tag before; last seen at:");
+                }
+
+            }
+
+            telemetry.update();
+            sleep(20);
+        }
+        //EVERYHTING BEFORE IS CAMERA CODE
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
         Pose2d startPose = new Pose2d(0, 0, Math.toRadians(0));
@@ -48,8 +161,12 @@ public class AutonomousRightV2 extends LinearOpMode {
                 coneDectc);
         colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
         wrist = hardwareMap.get(Servo.class,"wrist");
-        wrist.setDirection(Servo.Direction.REVERSE);
         turret = hardwareMap.get(DcMotor.class, "turret");
+        wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
+        wheelVer = hardwareMap.get(Servo.class, "deadwheelServo2");
+        wheelLat.setPosition(1);
+        wheelVer.setPosition(1);
+        sleep(1000);
         LineTracker lineTrackerLeftForward = new LineTracker(hardwareMap,"lineTrackerLeftForward");
         LineTracker lineTrackerRightForward = new LineTracker(hardwareMap,"lineTrackerRightForward");
         LineTracker lineTrackerLeftBack = new LineTracker(hardwareMap,"lineTrackerRightBack");
@@ -85,13 +202,11 @@ public class AutonomousRightV2 extends LinearOpMode {
                 new TranslationalVelocityConstraint(45)
         ));
         //Heads to cone and then reads the cone
-        TrajectorySequence trajSeq = drive.trajectorySequenceBuilder(startPose)
+        //Sets up for the cone placement
+        TrajectorySequence traj3 = drive.trajectorySequenceBuilder(startPose)
                 .setVelConstraint(velConstraint1)
                 .splineToConstantHeading(new Vector2d(10,-7),Math.toRadians(0))
-                .splineTo(new Vector2d(27,-9), Math.toRadians(0))
-                .build();
-        //Sets up for the cone placement
-        TrajectorySequence traj3 = drive.trajectorySequenceBuilder(trajSeq.end())
+                .setVelConstraint(velConstraint2)
                 .splineTo(new Vector2d(57,-8),Math.toRadians(0))
                 .addSpatialMarker(new Vector2d(57, -8), () -> {
                     // This marker runs at the point that gets
@@ -116,10 +231,6 @@ public class AutonomousRightV2 extends LinearOpMode {
                 .lineToLinearHeading(new Pose2d(53,-28, Math.toRadians(-90)))
                 .build();
         //Heads to the cone stack
-        drive.followTrajectorySequence(trajSeq);
-        pos = runSample();
-        sleep(10);
-        requestOpModeStop();
         drive.followTrajectorySequence(traj3);
         if(lineTrackerLeftBack.isOnLine()||lineTrackerLeftForward.isOnLine())
             val+=2;
@@ -208,19 +319,15 @@ public class AutonomousRightV2 extends LinearOpMode {
         turret.setTargetPosition(200);
         samePostitionarm();
         //Reads the cone and sets the claw down
-
-        if(pos == 1){
+        /* Actually do something useful */
+        if(tagOfInterest == null || tagOfInterest.id == LEFT){
             drive.followTrajectorySequence(trajL);
-        }
-        else if(pos == 2){
+        } else if (tagOfInterest.id == MIDDLE) {
             drive.followTrajectorySequence(trajC);
         }
         else{
             drive.followTrajectorySequence(trajR);
         }
-        telemetry.addData("pos",pos);
-        telemetry.update();
-        sleep(5000);
     }
     private void samePostitionarm(){
         if(turret.getTargetPosition() != turret.getCurrentPosition()){

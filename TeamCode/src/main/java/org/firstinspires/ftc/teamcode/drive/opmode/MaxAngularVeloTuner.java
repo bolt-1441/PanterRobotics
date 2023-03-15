@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -30,6 +31,8 @@ public class MaxAngularVeloTuner extends LinearOpMode {
     private ElapsedTime timer;
     private double maxAngVelocity = 0.0;
 
+    public Servo wheelLat;
+    public Servo wheelVer;
     @Override
     public void runOpMode() throws InterruptedException {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
@@ -43,7 +46,10 @@ public class MaxAngularVeloTuner extends LinearOpMode {
         telemetry.addLine("");
         telemetry.addLine("Press start when ready.");
         telemetry.update();
-
+        wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
+        wheelVer = hardwareMap.get(Servo.class, "deadwheelServo2");
+        wheelLat.setPosition(.9);
+        wheelVer.setPosition(.1);
         waitForStart();
 
         telemetry.clearAll();

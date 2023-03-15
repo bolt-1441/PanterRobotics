@@ -9,10 +9,13 @@ public class PantherArm extends Thread{
     private LimitSwitch armLimit;
     private LimitSwitch coneLimit;
 
-    public PantherArm(Arm arm, LimitSwitch armLimit, LimitSwitch coneLimit) {
+    private LimitSwitch clawLimit;
+
+    public PantherArm(Arm arm, LimitSwitch armLimit, LimitSwitch coneLimit,LimitSwitch clawLimit) {
         this.arm = arm;
         this.armLimit = armLimit;
         this.coneLimit = coneLimit;
+        this.clawLimit = clawLimit;
     }
 
     public void armReset() {
@@ -40,14 +43,17 @@ public class PantherArm extends Thread{
         //}
     }
     public void grabCone(){
-        new Thread(()-> {
-            arm.closeGripper();
-            arm.moveToTick(1);
-            while (!armLimit.isPressed()) {
+        arm.closeGripper();
+        while (!armLimit.isPressed()) {
+            arm.move(-1);
+
+            if (!clawLimit.isPressed()){
+                arm.move(0);
+                arm.openGripper();
+                arm.setTick(arm.getArmMotorCurrentPosition() + 500);
+                break;
             }
-            arm.openGripper();
-            arm.moveToTick(350);
-        }).start();
+        }
 
     }
 }

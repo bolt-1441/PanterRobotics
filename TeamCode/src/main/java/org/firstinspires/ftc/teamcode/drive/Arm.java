@@ -50,7 +50,11 @@ public class Arm {
                 num++;
             }
     }
-
+    public void setTick(int tick){
+        armMotor.setTargetPosition(tick);
+        armMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armMotor.setPower(1);
+    }
     public void moveToHeight(double height) {
         int targetPosition = (int)(height /COUNTS_PER_INCH);
         armMotor.setTargetPosition(targetPosition);
@@ -114,11 +118,11 @@ public class Arm {
     }
     public double getGripperPos(){return griper.getPosition();}
     public void openGripper() {
-        griper.setPosition(1);
+        griper.setPosition(.5);
     }
 
     public void closeGripper() {
-        griper.setPosition(.5);
+        griper.setPosition(1);
     }
 
     public int getArmMotorCurrentPosition(){

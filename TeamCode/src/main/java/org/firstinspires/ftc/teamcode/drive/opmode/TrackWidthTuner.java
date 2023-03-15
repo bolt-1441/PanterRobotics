@@ -8,6 +8,7 @@ import com.acmerobotics.roadrunner.util.Angle;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.MovingStatistics;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -31,6 +32,8 @@ public class TrackWidthTuner extends LinearOpMode {
     public static int NUM_TRIALS = 5;
     public static int DELAY = 1000; // ms
 
+    public Servo wheelLat;
+    public Servo wheelVer;
     @Override
     public void runOpMode() throws InterruptedException {
         Telemetry telemetry = new MultipleTelemetry(this.telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -42,7 +45,10 @@ public class TrackWidthTuner extends LinearOpMode {
         telemetry.addLine("Press play to begin the track width tuner routine");
         telemetry.addLine("Make sure your robot has enough clearance to turn smoothly");
         telemetry.update();
-
+        wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
+        wheelVer = hardwareMap.get(Servo.class, "deadwheelServo2");
+        wheelLat.setPosition(.9);
+        wheelVer.setPosition(.1);
         waitForStart();
 
         if (isStopRequested()) return;

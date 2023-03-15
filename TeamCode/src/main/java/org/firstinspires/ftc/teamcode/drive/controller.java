@@ -104,6 +104,8 @@ public class controller extends LinearOpMode {
     public LimitSwitch limitSwitch;
     public LimitSwitch coneDectc;
 
+    public LimitSwitch clawLimit;
+
     public Servo wheelLat;
     public Servo wheelVer;
 
@@ -113,9 +115,12 @@ public class controller extends LinearOpMode {
         setMotor();
         wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
         wheelVer = hardwareMap.get(Servo.class, "deadwheelServo2");
-        wheelLat.setPosition(.6);
-        wheelVer.setPosition(.4);
-        sleep(1000);
+        LineTracker lineTrackerLeftForward = new LineTracker(hardwareMap, "lineTrackerLeftForward");
+        LineTracker lineTrackerRightForward = new LineTracker(hardwareMap, "lineTrackerRightForward");
+        LineTracker lineTrackerLeftBack = new LineTracker(hardwareMap, "lineTrackerRightBack");
+        LineTracker lineTrackerRightBack = new LineTracker(hardwareMap, "lineTrackerLeftBack");
+        wheelLat.setPosition(.8);
+        wheelVer.setPosition(.2);
         // ########################################################################################
         // !!!            IMPORTANT Drive Information. Test your motor directions.            !!!!!
         // ########################################################################################
@@ -136,6 +141,7 @@ public class controller extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
+            arm.runToPostion();
             if(gamepad1.right_stick_x <= -.2 || gamepad1.right_stick_x >= .2)
                 correction = checkDirection();
             else {
@@ -177,10 +183,10 @@ public class controller extends LinearOpMode {
                 dec = 1;
             }
             if (gamepad1.right_bumper) {
-                dec = .5;
+                dec = .4;
             }
             if(gamepad1.dpad_down){
-                dec =.8;
+                dec =.5;
             }
             if(gamepad1.dpad_left){
                 dec = dec - .001;
@@ -226,17 +232,22 @@ public class controller extends LinearOpMode {
                 pantherArm.armReset();
 
             if(coneDectc.isPressed()&&gamepad2.dpad_down){
-                wrist.setPosition(1);
-                sleep(100);
-                turret.setTargetPosition(5);
-                sleep(270);
-                wrist.setPosition(.5);
-                sleep(75);
-                turret.setTargetPosition(350);
+//                wrist.setPosition(1);
+//                sleep(100);
+//                turret.setTargetPosition(5);
+//                sleep(270);
+//                wrist.setPosition(.5);
+//                sleep(75);
+//                turret.setTargetPosition(350);
+                pantherArm.grabCone();
             }
             if(gamepad2.dpad_up)
                 turret.setTargetPosition(5);
             setBrightnessFlash(.9);
+            //if(clawLimit.isPressed())
+                //turret.setPower(.01);
+            //else
+                //turret.setPower(1);
 
 //
             // This is test code:
@@ -412,9 +423,11 @@ public class controller extends LinearOpMode {
 
         limitSwitch = new LimitSwitch(hardwareMap,"limitSwitch",false);
         coneDectc = new LimitSwitch(hardwareMap,"limitSwitchA",false);
+        clawLimit = new LimitSwitch(hardwareMap,"armConeDet",false);
 
         arm = new Arm(hardwareMap,"turret","wrist");
-        pantherArm = new PantherArm(arm,limitSwitch,coneDectc);
+        pantherArm = new PantherArm(arm,new LimitSwitch(hardwareMap,"limitSwitch",false),
+                coneDectc,new LimitSwitch(hardwareMap,"armConeDet",true));
 
         parameters = new BNO055IMU.Parameters();
 

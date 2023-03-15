@@ -9,8 +9,6 @@ import android.view.View;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
-import com.acmerobotics.roadrunner.trajectory.Trajectory;
-import com.acmerobotics.roadrunner.trajectory.constraints.AngularVelocityConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.MinVelocityConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.TrajectoryVelocityConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.TranslationalVelocityConstraint;
@@ -24,23 +22,134 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.SwitchableLight;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch;
 import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
+import org.openftc.apriltag.AprilTagDetection;
+import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Autonomous(group = "drive")
-public class AutonomousLeftV2 extends LinearOpMode {
+public class ATONRIGHTSIDEWAYS extends LinearOpMode {
     private Servo wrist = null;
+
+    OpenCvCamera camera;
+    AprilTagDetectionPipeline aprilTagDetectionPipeline;
+
+    static final double FEET_PER_METER = 3.28084;
+
+    // Lens intrinsics
+    // UNITS ARE PIXELS
+    // NOTE: this calibration is for the C920 webcam at 800x448.
+    // You will need to do your own calibration for other configurations!
+    double fx = 578.272;
+    double fy = 578.272;
+    double cx = 402.145;
+    double cy = 221.506;
+
+    // UNITS ARE METERS
+    double tagsize = 0.166;
+
+    // Tag ID 18 from the 36h11 family
+    int LEFT = 1;
+    int MIDDLE = 2;
+    int RIGHT = 3;
+    AprilTagDetection tagOfInterest = null;
     private DcMotor turret = null;
     NormalizedColorSensor colorSensor;
     View relativeLayout;
+    public Servo wheelLat;
+    public Servo wheelVer;
 
     @Override
     public void runOpMode() throws InterruptedException {
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        camera = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
+        aprilTagDetectionPipeline = new AprilTagDetectionPipeline(tagsize, fx, fy, cx, cy);
+
+        camera.setPipeline(aprilTagDetectionPipeline);
+        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+        {
+            @Override
+            public void onOpened()
+            {
+                camera.startStreaming(864,480, OpenCvCameraRotation.SIDEWAYS_RIGHT);
+            }
+
+            @Override
+            public void onError(int errorCode)
+            {
+
+            }
+        });
+
+        telemetry.setMsTransmissionInterval(50);
+
+        /*
+         * The INIT-loop:
+         * This REPLACES waitForStart!
+         */
+        while (!isStarted() && !isStopRequested())
+        {
+            ArrayList<AprilTagDetection> currentDetections = aprilTagDetectionPipeline.getLatestDetections();
+
+            if(currentDetections.size() != 0)
+            {
+                boolean tagFound = false;
+
+                for(AprilTagDetection tag : currentDetections)
+                {
+                    if(tag.id == LEFT ||tag.id == MIDDLE ||tag.id == RIGHT)
+                    {
+                        tagOfInterest = tag;
+                        tagFound = true;
+                        break;
+                    }
+                }
+
+                if(tagFound)
+                {
+                    telemetry.addLine("Tag of interest is in sight!\n\nLocation data:");
+                }
+                else
+                {
+                    telemetry.addLine("Don't see tag of interest :(");
+
+                    if(tagOfInterest == null)
+                    {
+                        telemetry.addLine("(The tag has never been seen)");
+                    }
+                    else
+                    {
+                        telemetry.addLine("\nBut we HAVE seen the tag before; last seen at:");
+                    }
+                }
+
+            }
+            else
+            {
+                telemetry.addLine("Don't see tag of interest :(");
+
+                if(tagOfInterest == null)
+                {
+                    telemetry.addLine("(The tag has never been seen)");
+                }
+                else
+                {
+                    telemetry.addLine("\nBut we HAVE seen the tag before; last seen at:");
+                }
+
+            }
+
+            telemetry.update();
+            sleep(20);
+        }
+        //EVERYHTING BEFORE IS CAMERA CODE
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
         Pose2d startPose = new Pose2d(0, 0, Math.toRadians(0));
@@ -50,10 +159,14 @@ public class AutonomousLeftV2 extends LinearOpMode {
         LimitSwitch coneDectc = new LimitSwitch(hardwareMap,"limitSwitchA",false);
         PantherArm pantherArm = new PantherArm(arm,new LimitSwitch(hardwareMap,"limitSwitch",false),
                 coneDectc,new LimitSwitch(hardwareMap,"armConeDet",false));
-
         colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
         wrist = hardwareMap.get(Servo.class,"wrist");
         turret = hardwareMap.get(DcMotor.class, "turret");
+        wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
+        wheelVer = hardwareMap.get(Servo.class, "deadwheelServo2");
+        wheelLat.setPosition(1);
+        wheelVer.setPosition(1);
+        sleep(1000);
         LineTracker lineTrackerLeftForward = new LineTracker(hardwareMap,"lineTrackerLeftForward");
         LineTracker lineTrackerRightForward = new LineTracker(hardwareMap,"lineTrackerRightForward");
         LineTracker lineTrackerLeftBack = new LineTracker(hardwareMap,"lineTrackerRightBack");
@@ -66,7 +179,7 @@ public class AutonomousLeftV2 extends LinearOpMode {
         relativeLayout = ((Activity) hardwareMap.appContext).findViewById(relativeLayoutId);
 
         runSample(); // actually execute the sample
-        NormalizedRGBA colors = colorSensor.getNormalizedColors();
+        colorSensor.getNormalizedColors();
         wrist.setPosition(1);
         int val = 0;
         /////////////////////////THIS IS WHERE IT STARTS/////EVERYTHING BEFORE HERE IS INITIALIZATION/////////////
@@ -80,24 +193,22 @@ public class AutonomousLeftV2 extends LinearOpMode {
         turret.setPower(.7);
         samePostitionarm();
         sleep(300);
-        int pos = 0;
+        int pos;
         if (isStopRequested()) return;
         TrajectoryVelocityConstraint velConstraint1 = new MinVelocityConstraint(Arrays.asList(
-                new TranslationalVelocityConstraint(14)
+                new TranslationalVelocityConstraint(17)
         ));
         TrajectoryVelocityConstraint velConstraint2 = new MinVelocityConstraint(Arrays.asList(
-                new TranslationalVelocityConstraint(35)
+                new TranslationalVelocityConstraint(45)
         ));
         //Heads to cone and then reads the cone
-        TrajectorySequence trajSeq = drive.trajectorySequenceBuilder(startPose)
+        //Sets up for the cone placement
+        TrajectorySequence traj3 = drive.trajectorySequenceBuilder(startPose)
                 .setVelConstraint(velConstraint1)
-                .splineToConstantHeading(new Vector2d(10,5),Math.toRadians(0))
-                .splineTo(new Vector2d(25,5), Math.toRadians(0))
-                .build();
-        //Goes to the end of the field and lifts up the claw
-        TrajectorySequence trajSeq2 = drive.trajectorySequenceBuilder(trajSeq.end())
-                .splineTo(new Vector2d(57,6),Math.toRadians(0))
-                .addSpatialMarker(new Vector2d(57, 8), () -> {
+                .splineToConstantHeading(new Vector2d(10,-7),Math.toRadians(0))
+                .setVelConstraint(velConstraint2)
+                .splineTo(new Vector2d(57,-8),Math.toRadians(0))
+                .addSpatialMarker(new Vector2d(57, -8), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
                     turret.setPower(1);
@@ -105,35 +216,26 @@ public class AutonomousLeftV2 extends LinearOpMode {
                     samePostitionarm();
                     // Run your action in here!
                 })
-                .build();
-        //Sets up for the cone placement
-        TrajectorySequence traj2 = drive.trajectorySequenceBuilder(trajSeq2.end())
-                .lineToLinearHeading(new Pose2d(49, 17, Math.toRadians(180)))
+                .addSpatialMarker(new Vector2d(55 -10), () -> {
+                    // This marker runs at the point that gets
+                    arm.moveToTickT(1300);
+                })
+                .lineToLinearHeading(new Pose2d(49, -18, Math.toRadians(-180)))
+                .addSpatialMarker(new Vector2d(40, -18), () -> {
+                    // This marker runs at the point that gets
+                    // closest to the (20, 20) coordinate
+                    wrist.setPosition(.5);
+                    // Run your action in here!
+                })
+                .lineToLinearHeading(new Pose2d(58,-21, Math.toRadians(-180)))
+                .lineToLinearHeading(new Pose2d(53,-28, Math.toRadians(-90)))
                 .build();
         //Heads to the cone stack
-        TrajectorySequence traj3 = drive.trajectorySequenceBuilder(traj2.end())
-                .lineToLinearHeading(new Pose2d(56,17, Math.toRadians(180)))
-                .lineToLinearHeading(new Pose2d(54,19, Math.toRadians(90)))
-                .build();
-
-        drive.followTrajectorySequence(trajSeq);
-        pos = runSample();
-        sleep(150);
-        drive.followTrajectorySequence(trajSeq2);
-        drive.followTrajectorySequence(traj2);
-        arm.moveToTickT(1100);
-        //turret.setTargetPosition(1100);
-        samePostitionarm();
-        sleep(400);
-        wrist.setPosition(.5);
-        turret.setPower(1);
-        turret.setTargetPosition(1200);
-        samePostitionarm();
         drive.followTrajectorySequence(traj3);
         if(lineTrackerLeftBack.isOnLine()||lineTrackerLeftForward.isOnLine())
-            val-=2;
-        if (lineTrackerRightBack.isOnLine()||lineTrackerRightForward.isOnLine())
             val+=2;
+        if (lineTrackerRightBack.isOnLine()||lineTrackerRightForward.isOnLine())
+            val-=2;
         else
             val=0;
         telemetry.addData("val:",val);
@@ -143,65 +245,65 @@ public class AutonomousLeftV2 extends LinearOpMode {
         // Run your action in here!
         TrajectorySequence compensate = drive.trajectorySequenceBuilder(traj3.end())
                 .setVelConstraint(velConstraint1)
-                .lineToLinearHeading(new Pose2d(54+val,38, Math.toRadians(90)))
-                .lineToLinearHeading(new Pose2d(54+val,37, Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(53+val,-38, Math.toRadians(-90)))
+                .lineToLinearHeading(new Pose2d(53+val,-37, Math.toRadians(-90)))
                 .build();
         //heads to place cone
         TrajectorySequence traj4 = drive.trajectorySequenceBuilder(compensate.end())
-                .lineToLinearHeading(new Pose2d(55,-2, Math.toRadians(90)))
-                .addSpatialMarker(new Vector2d(55, 30), () -> {
+                .lineToLinearHeading(new Pose2d(55,3, Math.toRadians(-90)))
+                .addSpatialMarker(new Vector2d(55, -35), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
                     arm.moveToTickT(400);
                     // Run your action in here!
                 })
-                .lineToLinearHeading(new Pose2d(57, -3, Math.toRadians(180)))
-                .lineToLinearHeading(new Pose2d(55, -3, Math.toRadians(180)))
-                .waitSeconds(1)
-                .lineToLinearHeading(new Pose2d(51, -4, Math.toRadians(180)))
-                .addSpatialMarker(new Vector2d(52, -2), () -> {
+                .lineToLinearHeading(new Pose2d(57, 4, Math.toRadians(-180)))
+                .lineToLinearHeading(new Pose2d(55, 4, Math.toRadians(-180)))
+                .waitSeconds(.1)
+                .lineToLinearHeading(new Pose2d(51, 5, Math.toRadians(-180)))
+                .addSpatialMarker(new Vector2d(53, 2), () -> {
                     // This marker runs at the point that gets
                     // closest to the (20, 20) coordinate
-                    arm.moveToTickT(2200);
+                    arm.moveToTickT(2300);
                     // Run your action in here!
                 })
-                .lineToLinearHeading(new Pose2d(52, -2, Math.toRadians(180)))
+                .lineToLinearHeading(new Pose2d(52, 3, Math.toRadians(-180)))
                 .build();
         TrajectorySequence traj5 = drive.trajectorySequenceBuilder(traj4.end())
-                .lineToLinearHeading(new Pose2d(55, -4, Math.toRadians(180)))
+                .lineToLinearHeading(new Pose2d(62, 4, Math.toRadians(-180)))
                 .build();
         //TODO MORE THAN ONE CONE PLACEMENT
         TrajectorySequence trajL = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(53,-15,Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(55,15,Math.toRadians(-90)))
                 .build();
         TrajectorySequence trajC = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(53,7,Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(58,-7,Math.toRadians(-90)))
                 .build();
         TrajectorySequence trajR = drive.trajectorySequenceBuilder(traj5.end())
-                .lineToLinearHeading(new Pose2d(52,35,Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(62,-32,Math.toRadians(-90)))
                 .build();
-        sleep(600);
+        sleep(200);
         AtomicBoolean running = new AtomicBoolean(true);
         Thread thread = new Thread(() -> {
+            //while (!coneDectc.isPressed()){}
             ElapsedTime elapsedTime = new ElapsedTime();
-            //while (running.get()) {
-                while (!coneDectc.isPressed()&& elapsedTime.seconds()<5) {
-                }
-                sleep(370);
-                try {
-                    pantherArm.grabTopCone();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            //}
+            while (!coneDectc.isPressed()&& elapsedTime.seconds()<5) {
+            }
+            sleep(450);
+            try {
+                pantherArm.grabTopCone();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            // }
         });
         thread.start();
         drive.followTrajectorySequence(compensate);
         running.set(false);
-        sleep(500);
+        sleep(100);
         wrist.setPosition(1);
         turret.setPower(1);
-        sleep(500);
+        sleep(100);
         turret.setTargetPosition(1400);
         samePostitionarm();
         sleep(400);
@@ -212,24 +314,20 @@ public class AutonomousLeftV2 extends LinearOpMode {
         sleep(200);
         turret.setTargetPosition(2000);
         samePostitionarm();
-        sleep(1000);
+        sleep(500);
         drive.followTrajectorySequence(traj5);
         turret.setTargetPosition(200);
         samePostitionarm();
         //Reads the cone and sets the claw down
-
-        if(pos == 3){
+        /* Actually do something useful */
+        if(tagOfInterest == null || tagOfInterest.id == LEFT){
             drive.followTrajectorySequence(trajL);
-        }
-        else if(pos == 2){
+        } else if (tagOfInterest.id == MIDDLE) {
             drive.followTrajectorySequence(trajC);
         }
         else{
             drive.followTrajectorySequence(trajR);
         }
-        telemetry.addData("pos",pos);
-        telemetry.update();
-        sleep(5000);
     }
     private void samePostitionarm(){
         if(turret.getTargetPosition() != turret.getCurrentPosition()){
@@ -264,8 +362,6 @@ public class AutonomousLeftV2 extends LinearOpMode {
 
         // xButtonPreviouslyPressed and xButtonCurrentlyPressed keep track of the previous and current
         // state of the X button on the gamepad
-        boolean xButtonPreviouslyPressed = false;
-        boolean xButtonCurrentlyPressed = false;
 
         // Get a reference to our sensor object. It's recommended to use NormalizedColorSensor over
         // ColorSensor, because NormalizedColorSensor consistently gives values between 0 and 1, while

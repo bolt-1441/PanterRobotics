@@ -47,7 +47,7 @@ public class testingClass extends LinearOpMode {
         Arm arm = new Arm(hardwareMap,"turret","wrist");
         org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch coneDectc = new org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch(hardwareMap,"limitSwitchA",false);
         PantherArm pantherArm = new PantherArm(arm,new org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch(hardwareMap,"limitSwitch",false),
-                coneDectc);
+                coneDectc,new org.firstinspires.ftc.teamcode.drive.Aton.LimitSwitch(hardwareMap,"armConeDet",false));
 
         colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
         wrist = hardwareMap.get(Servo.class,"wrist");

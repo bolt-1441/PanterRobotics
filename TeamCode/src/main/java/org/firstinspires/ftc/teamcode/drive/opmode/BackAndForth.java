@@ -6,6 +6,7 @@ import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
@@ -31,6 +32,8 @@ public class BackAndForth extends LinearOpMode {
 
     public static double DISTANCE = 50;
 
+    public Servo wheelLat;
+    public Servo wheelVer;
     @Override
     public void runOpMode() throws InterruptedException {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
@@ -42,7 +45,10 @@ public class BackAndForth extends LinearOpMode {
         Trajectory trajectoryBackward = drive.trajectoryBuilder(trajectoryForward.end())
                 .back(DISTANCE)
                 .build();
-
+        wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
+        wheelVer = hardwareMap.get(Servo.class, "deadwheelServo2");
+        wheelLat.setPosition(.9);
+        wheelVer.setPosition(.1);
         waitForStart();
 
         while (opModeIsActive() && !isStopRequested()) {

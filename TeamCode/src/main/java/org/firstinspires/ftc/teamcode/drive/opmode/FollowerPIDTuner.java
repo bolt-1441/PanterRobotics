@@ -5,6 +5,7 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
@@ -28,6 +29,8 @@ import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
 public class FollowerPIDTuner extends LinearOpMode {
     public static double DISTANCE = 48; // in
 
+    public Servo wheelLat;
+    public Servo wheelVer;
     @Override
     public void runOpMode() throws InterruptedException {
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
@@ -35,7 +38,10 @@ public class FollowerPIDTuner extends LinearOpMode {
         Pose2d startPose = new Pose2d(-DISTANCE / 2, -DISTANCE / 2, 0);
 
         drive.setPoseEstimate(startPose);
-
+        wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
+        wheelVer = hardwareMap.get(Servo.class, "deadwheelServo2");
+        wheelLat.setPosition(.9);
+        wheelVer.setPosition(.1);
         waitForStart();
 
         if (isStopRequested()) return;

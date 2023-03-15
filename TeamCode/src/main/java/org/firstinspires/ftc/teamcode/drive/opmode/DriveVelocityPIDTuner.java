@@ -18,6 +18,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -53,12 +54,12 @@ import java.util.List;
 @Autonomous(group = "drive")
 public class DriveVelocityPIDTuner extends LinearOpMode {
     public static double DISTANCE = 72; // in
-
+    public Servo wheelLat;
+    public Servo wheelVer;
     enum Mode {
         DRIVER_MODE,
         TUNING_MODE
     }
-
     private static MotionProfile generateProfile(boolean movingForward) {
         MotionState start = new MotionState(movingForward ? 0 : DISTANCE, 0, 0, 0);
         MotionState goal = new MotionState(movingForward ? DISTANCE : 0, 0, 0, 0);
@@ -67,6 +68,7 @@ public class DriveVelocityPIDTuner extends LinearOpMode {
 
     @Override
     public void runOpMode() {
+
         if (!RUN_USING_ENCODER) {
             RobotLog.setGlobalErrorMsg("%s does not need to be run if the built-in motor velocity" +
                     "PID is not in use", getClass().getSimpleName());
@@ -90,7 +92,10 @@ public class DriveVelocityPIDTuner extends LinearOpMode {
         telemetry.addLine("Ready!");
         telemetry.update();
         telemetry.clearAll();
-
+        wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
+        wheelVer = hardwareMap.get(Servo.class, "deadwheelServo2");
+        wheelLat.setPosition(.9);
+        wheelVer.setPosition(.1);
         waitForStart();
 
         if (isStopRequested()) return;

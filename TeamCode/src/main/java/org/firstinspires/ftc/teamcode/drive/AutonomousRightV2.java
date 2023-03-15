@@ -78,7 +78,7 @@ public class AutonomousRightV2 extends LinearOpMode {
             @Override
             public void onOpened()
             {
-                camera.startStreaming(800,448, OpenCvCameraRotation.UPRIGHT);
+                camera.startStreaming(864,480, OpenCvCameraRotation.SIDEWAYS_RIGHT);
             }
 
             @Override
@@ -158,7 +158,7 @@ public class AutonomousRightV2 extends LinearOpMode {
         Arm arm = new Arm(hardwareMap,"turret","wrist");
         LimitSwitch coneDectc = new LimitSwitch(hardwareMap,"limitSwitchA",false);
         PantherArm pantherArm = new PantherArm(arm,new LimitSwitch(hardwareMap,"limitSwitch",false),
-                coneDectc);
+                coneDectc,new LimitSwitch(hardwareMap,"armConeDet",false));
         colorSensor = hardwareMap.get(NormalizedColorSensor.class, "sensor_color");
         wrist = hardwareMap.get(Servo.class,"wrist");
         turret = hardwareMap.get(DcMotor.class, "turret");

@@ -185,7 +185,7 @@ public class ATONLEFTSIDEWAYS extends LinearOpMode {
                 .forward(-3)
                 .build();
         TrajectorySequence trajSeq2 = drive.trajectorySequenceBuilder(trajSeq.end())
-                .strafeLeft(42)
+                .strafeLeft(43)
                 .addTemporalMarker(pathTime -> pathTime * 0.5, () -> {
                     // Runs 50% into the path
                     arm.moveToTick(2100);
@@ -200,7 +200,7 @@ public class ATONLEFTSIDEWAYS extends LinearOpMode {
                 })
                 .build();
         TrajectorySequence trajSeq4 = drive.trajectorySequenceBuilder(trajSeq3.end())
-                .strafeLeft(10)
+                .strafeLeft(11)
                 .addTemporalMarker(pathTime -> pathTime * 0.7, () -> {
                     arm.moveToTick(500);
                 })
@@ -213,44 +213,29 @@ public class ATONLEFTSIDEWAYS extends LinearOpMode {
 //                .setVelConstraint(velConstraint3)
                 .turn(Math.toRadians(180),5,2.5)
                 .lineToLinearHeading(new Pose2d(58, 18, Math.toRadians(90)))
-                .addTemporalMarker(pathTime -> pathTime * .56, () -> {
-                    //LEFT SIDE IS FORWARD
-                    //RIGHT SIDE IS BACK
-                    if(lineTrackerLeftForward.isOnLine()||lineTrackerRightForward.isOnLine())
-                        val.addAndGet(-2);
-                    if (lineTrackerRightBack.isOnLine()||lineTrackerLeftBack.isOnLine())
-                        val.addAndGet(2);
-                    else
-                        val.set(0);
-                    telemetry.addData("val",val.get());
-                    telemetry.update();
-                    arm.moveToTickT(1200);
-                })
+                .build();
+        TrajectorySequence trajComp = drive.trajectorySequenceBuilder(trajSeq5.end())
                 .lineToLinearHeading(new Pose2d(58+val.get(), 19, Math.toRadians(90)))
                 .lineToLinearHeading(new Pose2d(58+val.get(), 25, Math.toRadians(90)))
                 .setVelConstraint(velConstraint3)
-                .forward(5)
+                .forward(4)
+                .forward(-1)
                 .build();
         // This example will run 50% of the way through the path
-        TrajectorySequence trajSeq6 = drive.trajectorySequenceBuilder(trajSeq5.end())
-                .lineToLinearHeading(new Pose2d(57+val.get(), -37, Math.toRadians(90)))
-                .strafeLeft(14)
-                .addTemporalMarker(pathTime -> pathTime * .9, () -> {
-                    arm.moveToTick(2900);
-                    arm.closeGripper();
-                    arm.moveToTick(2800);
-                    arm.moveToTick(2900);
-                })
-                .build();
-        TrajectorySequence trajSeq7 = drive.trajectorySequenceBuilder(trajSeq6.end())//todo fix thismost likly slpit it up
+        TrajectorySequence trajSeq6 = drive.trajectorySequenceBuilder(trajComp.end())
+                .lineToLinearHeading(new Pose2d(58+val.get(), -17, Math.toRadians(90)))
                 .strafeRight(14)
-                .addTemporalMarker(pathTime -> pathTime * .2, () -> {
-                    arm.moveToTick(2900);
-                })
-                .lineToLinearHeading(new Pose2d(58+val.get(), 25, Math.toRadians(90)))
-                .setVelConstraint(velConstraint3)
-                .forward(5)
                 .build();
+        TrajectorySequence trajSeq7 = drive.trajectorySequenceBuilder(trajSeq6.end())
+                .setVelConstraint(velConstraint3)
+                .forward(3)
+                .build();
+        TrajectorySequence trajSeq8 = drive.trajectorySequenceBuilder(trajSeq7.end())
+                .forward(-5)
+                .build();
+        TrajectorySequence trajSeq9 = drive.trajectorySequenceBuilder(trajSeq8.end())
+                .strafeLeft(14)
+                        .build();
 
         drive.followTrajectorySequence(trajSeq);
         sleep(10);
@@ -263,11 +248,44 @@ public class ATONLEFTSIDEWAYS extends LinearOpMode {
         drive.followTrajectorySequence(trajSeq4);
         sleep(50);
         drive.followTrajectorySequence(trajSeq5);
+        if(lineTrackerLeftForward.isOnLine()||lineTrackerRightForward.isOnLine())
+            val.addAndGet(-3);
+        if (lineTrackerRightBack.isOnLine()||lineTrackerLeftBack.isOnLine())
+            val.addAndGet(3);
+        else
+            val.set(0);
+        telemetry.addData("val",val.get());
+        telemetry.update();
+        arm.moveToTickT(1200);
+        drive.followTrajectorySequence(trajComp);
         sleep(50);
         pantherArm.grabCone();
         sleep(100);
         drive.followTrajectorySequence(trajSeq6);
+        sleep(50);
+        arm.moveToTick(2900);
         drive.followTrajectorySequence(trajSeq7);
+        arm.moveToTick(2800);
+        arm.closeGripper();
+        arm.moveToTick(2900);
+        drive.followTrajectorySequence(trajSeq8);
+        arm.moveToTick(300);
+        drive.followTrajectorySequence(trajSeq9);
+        if (tagOfInterest.id==RIGHT){
+        }
+        if (tagOfInterest.id==MIDDLE){
+            TrajectorySequence MIDDLETraj = drive.trajectorySequenceBuilder(trajSeq8.end())
+                    .lineToLinearHeading(new Pose2d(58, 6, Math.toRadians(90)))
+                    .build();
+            drive.followTrajectorySequence(MIDDLETraj);
+        }
+        if (tagOfInterest.id==LEFT){
+            TrajectorySequence LEFTTraj = drive.trajectorySequenceBuilder(trajSeq8.end())
+                    .lineToLinearHeading(new Pose2d(58, 26, Math.toRadians(90)))
+                    .build();
+            drive.followTrajectorySequence(LEFTTraj);
+        }
+
         sleep(5000);
 
     }

@@ -50,7 +50,7 @@ public class PantherArm extends Thread{
             if (!clawLimit.isPressed()){
                 arm.move(0);
                 arm.openGripper();
-                arm.setTick(arm.getArmMotorCurrentPosition() + 500);
+                arm.setTick(arm.getArmMotorCurrentPosition() + 570);
                 break;
             }
         }

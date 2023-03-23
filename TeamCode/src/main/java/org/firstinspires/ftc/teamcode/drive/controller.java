@@ -110,7 +110,7 @@ public class controller extends LinearOpMode {
     public Servo wheelVer;
 
     @Override
-    public void runOpMode() {
+    public void runOpMode() throws InterruptedException {
         initBot();
         setMotor();
         wheelLat = hardwareMap.get(Servo.class, "deadwheelServo");
@@ -138,11 +138,12 @@ public class controller extends LinearOpMode {
         Acceleration acceleration = imu.getLinearAcceleration();
         waitForStart();
         runtime.reset();
-
+        int lastPosLeftFront = 0,lastPosLeftBack = 0,lastPosRightFront = 0,lastPosRightBack = 0;
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             arm.runToPostion();
-            if(gamepad1.right_stick_x <= -.2 || gamepad1.right_stick_x >= .2)
+            if((gamepad1.right_stick_x <= -.2 || gamepad1.right_stick_x >= .2 )||(leftFrontDrive.getPower() == 0  && leftBackDrive.getPower() == 0
+                    && rightFrontDrive.getPower() == 0 && rightBackDrive.getPower() == 0))
                 correction = checkDirection();
             else {
                 correction = 0;
@@ -155,6 +156,7 @@ public class controller extends LinearOpMode {
 
             double max;
             turret.setPower(1);
+            double correctionFL = 0,correctionFR = 0, correctionBL = 0, correctionBR = 0;
             // POV Mode uses left joystick to go forward & strafe, and right joystick to rotate.
             double axial = gamepad1.left_stick_x * .6 - correction;  // Note: pushing stick forward gives negative value; the multiplyer on left_stick_x is to reduce the turning for criss
             double lateral = -gamepad1.right_stick_x;
@@ -162,10 +164,43 @@ public class controller extends LinearOpMode {
 
             // Combine the joystick requests for each axis-motion to determine each wheel's power.
             // Set up a variable for each drive wheel to save the power level for telemetry.
-            double leftFrontPower = axial - lateral + yaw;
-            double rightFrontPower = axial - lateral - yaw;
-            double leftBackPower = axial + lateral + yaw;
-            double rightBackPower = axial + lateral - yaw;
+
+            if((leftFrontDrive.getCurrentPosition() != lastPosLeftFront ||
+                    leftBackDrive.getCurrentPosition() != lastPosLeftBack ||
+                    rightFrontDrive.getCurrentPosition() != lastPosRightFront ||
+                    rightBackDrive.getCurrentPosition() != lastPosRightBack ) &&
+                    (leftFrontDrive.getPower() == 0  && leftBackDrive.getPower() == 0
+                            && rightFrontDrive.getPower() == 0 && rightBackDrive.getPower() == 0)){
+                if(leftFrontDrive.getCurrentPosition() < lastPosLeftFront-10)
+                    correctionFL = .2;
+                //telemetry.addData("left fwront + ",  true);
+                if(leftFrontDrive.getCurrentPosition() > lastPosLeftFront+10)
+                    correctionFL = -.2;
+                //telemetry.addData("left fwront - ",  true);
+                if(rightFrontDrive.getCurrentPosition() < lastPosRightFront-10)
+                    correctionFR = .2;
+                //telemetry.addData("Right Front + ",  true);
+                if(rightFrontDrive.getCurrentPosition() > lastPosRightFront+10)
+                    correctionFR = -.2;
+                //telemetry.addData("Right front - ",  true);
+                if(leftBackDrive.getCurrentPosition() < lastPosLeftBack-10)
+                    correctionBL = .2;
+                //telemetry.addData("left back + ",  true);
+                if(leftBackDrive.getCurrentPosition() > lastPosLeftBack+10)
+                    correctionBL = -.2;
+                //telemetry.addData("left back - ",  true);
+                if(rightBackDrive.getCurrentPosition() < lastPosRightBack-10)
+                    correctionBR = .2;
+                //telemetry.addData("Right back + ",  true);
+                if(rightBackDrive.getCurrentPosition() > lastPosRightBack+10)
+                    correctionBR = -.2;
+                //telemetry.addData("Right back - ",  true);
+            }
+
+            double leftFrontPower = axial - lateral + yaw + correctionFL;
+            double rightFrontPower = axial - lateral - yaw + correctionFR;
+            double leftBackPower = axial + lateral + yaw + correctionBL;
+            double rightBackPower = axial + lateral - yaw + correctionBR;
 
             // Normalize the values so no wheel power exceeds 100%
             // This ensures that the robot maintains the desired motion.
@@ -173,20 +208,24 @@ public class controller extends LinearOpMode {
             max = Math.max(max, Math.abs(leftBackPower));
             max = Math.max(max, Math.abs(rightBackPower));
 
-            if (max > 1.0) {
+            if (max > 1.5) {
                 leftFrontPower /= max;
                 rightFrontPower /= max;
                 leftBackPower /= max;
                 rightBackPower /= max;
             }
+
+
+
+
             if (gamepad1.left_bumper) {
-                dec = 1;
+                dec = 1.5;
             }
             if (gamepad1.right_bumper) {
                 dec = .4;
             }
             if(gamepad1.dpad_down){
-                dec =.5;
+                dec =.8;
             }
             if(gamepad1.dpad_left){
                 dec = dec - .001;
@@ -227,22 +266,15 @@ public class controller extends LinearOpMode {
                 turret.setTargetPosition(turret.getCurrentPosition() - (int)(gamepad2.left_trigger * 150));
 
             if(limitSwitch.isPressed())
-                turret.setTargetPosition(turret.getCurrentPosition() + 100);
+                turret.setTargetPosition(turret.getCurrentPosition() + 100 + (Math.abs(turret.getTargetPosition())));
             if(gamepad2.right_stick_button)
                 pantherArm.armReset();
 
             if(coneDectc.isPressed()&&gamepad2.dpad_down){
-//                wrist.setPosition(1);
-//                sleep(100);
-//                turret.setTargetPosition(5);
-//                sleep(270);
-//                wrist.setPosition(.5);
-//                sleep(75);
-//                turret.setTargetPosition(350);
                 pantherArm.grabCone();
             }
             if(gamepad2.dpad_up)
-                turret.setTargetPosition(5);
+                pantherArm.grabCone();
             setBrightnessFlash(.9);
             //if(clawLimit.isPressed())
                 //turret.setPower(.01);
@@ -267,6 +299,11 @@ public class controller extends LinearOpMode {
             rightFrontDrive.setPower(rightFrontPower*dec);
             leftBackDrive.setPower(leftBackPower*dec);
             rightBackDrive.setPower(rightBackPower*dec);
+
+            lastPosLeftFront = leftFrontDrive.getCurrentPosition();
+            lastPosLeftBack = leftBackDrive.getCurrentPosition();
+            lastPosRightFront = rightFrontDrive.getCurrentPosition();
+            lastPosRightBack = rightBackDrive.getCurrentPosition();
             // Show the elapsed game time and wheel power.
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.update();

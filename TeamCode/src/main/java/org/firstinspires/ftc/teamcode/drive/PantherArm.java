@@ -42,12 +42,28 @@ public class PantherArm extends Thread{
             //let arm move
         //}
     }
-    public void grabCone(){
+    public void grabCone() throws InterruptedException {
         arm.closeGripper();
         while (!armLimit.isPressed()) {
             arm.move(-1);
 
             if (!clawLimit.isPressed()){
+                arm.move(0);
+                arm.openGripper();
+                sleep(75);
+                arm.setTick(arm.getArmMotorCurrentPosition() + 570);
+                break;
+            }
+        }
+
+    }
+
+    public void grabConeAton(){
+        arm.closeGripper();
+        while (!armLimit.isPressed()) {
+            arm.move(-1);
+
+            if (!clawLimit.isPressed() || (arm.getArmMotorCurrentPosition() <250)){
                 arm.move(0);
                 arm.openGripper();
                 arm.setTick(arm.getArmMotorCurrentPosition() + 570);
